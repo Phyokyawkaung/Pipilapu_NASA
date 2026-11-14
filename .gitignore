@@ -12,6 +12,9 @@ pipeline/raw/*
 *.img
 *.lbl
 *.jp2
+# TES Data Tool exports (file names contain the requester's email address)
+*.van
+*.van.gz
 
 # Archives and bundles (for example zips we pass around)
 *.zip

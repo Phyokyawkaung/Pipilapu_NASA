@@ -1,0 +1,131 @@
+"""Mars surface temperature for the Mars targets, from MGS TES Data Tool exports, written into docs/data/targets.json.
+
+  Summary of one file (writes nothing):
+    python pipeline/prep_tes.py --site jezero --day pipeline/raw/tes/jezero_day.van.gz
+  Day and night together (writes ts_mean and ts_range for that site into docs/data/targets.json):
+    python pipeline/prep_tes.py --site jezero --day pipeline/raw/tes/jezero_day.van.gz --night pipeline/raw/tes/jezero_night.van.gz
+
+Input: tab-separated exports (.van or .van.gz) from the TES Data Tool at the ASU TES Data Node (MGS TES Standard Data
+  Products, archived by the PDS Geosciences Node). Query used: the site's 111.2 km box, Observation Type = Surface,
+  Time of Day = Day or Night, Clear Atmosphere and Highest Spectral Quality on. Columns needed (header line):
+  LONGITUDE_IAU2000 (deg E), LATITUDE, SOLAR_LONGITUDE (Ls, deg), LOCAL_TIME (Mars hours), TARGET_TEMPERATURE (K).
+
+Method, same formulas as build_targets.py so the app treats it like the Moon and Earth values:
+  only spots inside the site's 111.2 km patch are used;
+  each pass over the patch (rows sharing one SOLAR_LONGITUDE value) is averaged first, then the passes are averaged,
+  so one long pass cannot outweigh many short ones;
+  day and night means are converted to degC; ts_mean = (day + night) / 2, ts_range = day - night.
+Difference from Earth and Moon, written into the source text: TES crossed at about 14:00 and 02:00 local time, not 10:30 and
+  22:30, and the Clear Atmosphere filter drops the dustiest season. The script prints the actual local times and Ls covered.
+
+Raw exports stay in pipeline/raw/tes/ (never committed; their file names contain the requester's email address).
+"""
+import argparse, datetime, gzip, json, math, os, sys
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+MARS_R = 3389500.0
+PATCH_KM = 111.2  # must match build_targets.py
+SITES = {  # centres must match build_targets.py
+    "jezero": (18.4, 77.5),
+    "olympus": (18.6, -133.8),
+    "valles": (-14.0, -59.0),
+}
+COLS = ("LONGITUDE_IAU2000", "LATITUDE", "SOLAR_LONGITUDE", "LOCAL_TIME", "TARGET_TEMPERATURE")
+SRC = ("MGS TES Standard Data Products, TARGET_TEMPERATURE of surface observations with Clear Atmosphere and Highest "
+       "Spectral Quality, queried with the TES Data Tool (ASU TES Data Node; archive: PDS Geosciences Node)")
+
+
+def read(path):
+    op = gzip.open if path.lower().endswith(".gz") else open
+    with op(path, "rt", encoding="ascii", errors="replace") as f:
+        head = f.readline().strip().split("\t")
+        miss = [c for c in COLS if c not in head]
+        if miss:
+            sys.exit(f"{os.path.basename(path)}: missing column(s) {', '.join(miss)}. Tick them in the TES Data Tool and export again.")
+        ix = [head.index(c) for c in COLS]
+        rows = []
+        for line in f:
+            p = line.rstrip("\n").split("\t")
+            try:
+                rows.append(tuple(float(p[i]) for i in ix))
+            except (ValueError, IndexError):
+                continue
+    if not rows:
+        sys.exit(f"{os.path.basename(path)}: no data rows.")
+    return rows
+
+
+def in_patch(lat0, lon0, lat, lon):
+    half = PATCH_KM * 500.0
+    dlat = math.degrees(half / MARS_R)
+    dlon = math.degrees(half / (MARS_R * max(math.cos(math.radians(lat0)), 0.01)))
+    dl = (lon - lon0 + 180) % 360 - 180
+    return abs(lat - lat0) <= dlat and abs(dl) <= dlon
+
+
+def summarise(path, site, label):
+    lat0, lon0 = SITES[site]
+    rows = read(path)
+    keep = [r for r in rows if in_patch(lat0, lon0, r[1], r[0]) and 100 < r[4] < 400]
+    if not keep:
+        sys.exit(f"{label}: no rows inside the {PATCH_KM} km patch around {site}. Is this the right file?")
+    passes = {}
+    for r in keep:
+        passes.setdefault(r[2], []).append(r[4])
+    means = [sum(v) / len(v) for v in passes.values()]
+    t = sum(means) / len(means) - 273.15
+    lts = sorted(r[3] for r in keep)
+    ls = sorted(passes)
+    hh = lambda h: f"{int(h):02d}:{int(round((h % 1) * 60)) % 60:02d}"
+    lt_lo, lt_hi = lts[int(0.05 * (len(lts) - 1))], lts[int(0.95 * (len(lts) - 1))]
+    bins = [0] * 12
+    for x in ls:
+        bins[int(x // 30) % 12] += 1
+    gaps = [f"{30 * i}-{30 * i + 30}" for i, n in enumerate(bins) if n == 0]
+    print(f"  {label}: {len(keep)} of {len(rows)} spots inside the patch, {len(passes)} passes")
+    print(f"    local time {hh(lt_lo)} to {hh(lt_hi)} (5th to 95th percentile), median {hh(lts[len(lts) // 2])}")
+    print(f"    Ls without any pass: {', '.join(gaps) or 'none'}")
+    print(f"    mean of pass means: {t:.1f} degC ({t + 273.15:.1f} K); pass means range {min(means) - 273.15:.1f} to {max(means) - 273.15:.1f} degC")
+    return dict(t=t, lt=(hh(lt_lo), hh(lt_hi)), n=len(keep), passes=len(passes), gaps=gaps)
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--site", required=True, choices=sorted(SITES))
+    ap.add_argument("--day", required=True, help="TES Data Tool export for Time of Day = Day")
+    ap.add_argument("--night", help="TES Data Tool export for Time of Day = Night; without it nothing is written")
+    ap.add_argument("--url", help="page of the TES Data Tool you used, added to the source text")
+    ap.add_argument("--out", default=os.path.join(HERE, "..", "docs", "data", "targets.json"))
+    a = ap.parse_args()
+    print(f"== {a.site}: TES surface temperature over a {PATCH_KM} km patch")
+    d = summarise(a.day, a.site, "day")
+    if not a.night:
+        print("\nno --night file: summary only, targets.json not changed (ts_mean and ts_range need both).")
+        return
+    n = summarise(a.night, a.site, "night")
+    if d["t"] < n["t"]:
+        sys.exit("day is colder than night: check that --day and --night are not swapped. Nothing written.")
+    lat0, lon0 = SITES[a.site]
+    gaps = sorted(set(d["gaps"]) | set(n["gaps"]))
+    src = SRC[:-1] + f", {a.url})" if a.url else SRC
+    text = (f"Measured by pipeline/prep_tes.py from {src}: mean over a {PATCH_KM} km patch centred "
+            f"{abs(lat0)}°{'N' if lat0 >= 0 else 'S'}, {abs(lon0)}°{'E' if lon0 >= 0 else 'W'}; each pass averaged first. "
+            f"Day {d['lt'][0]}-{d['lt'][1]} local time ({d['n']} spots, {d['passes']} passes), night {n['lt'][0]}-{n['lt'][1]} "
+            f"({n['n']} spots, {n['passes']} passes). mean = (day + night) / 2, swing = day - night. NOT the same local hours as "
+            f"Earth and Moon (10:30 and 22:30), so the swing is not like for like."
+            + (f" No clear-sky passes at Ls {', '.join(gaps)} (dusty season)." if gaps else "")
+            + f" Accessed {datetime.date.today().isoformat()}.")
+    with open(a.out, encoding="utf-8") as f:
+        doc = json.load(f)
+    if doc.get("demo"):
+        sys.exit("targets.json is marked demo; run build_targets.py for real terrain first. Nothing written.")
+    t = doc.setdefault("targets", {}).setdefault(a.site, {})
+    t["ts_mean"] = {"value": round((d["t"] + n["t"]) / 2, 1), "source": text}
+    t["ts_range"] = {"value": round(d["t"] - n["t"], 1), "source": text}
+    with open(a.out, "w", encoding="utf-8") as f:
+        json.dump(doc, f, indent=1, ensure_ascii=False)
+    print(f"\nwrote {a.out}: {a.site} ts_mean {t['ts_mean']['value']} degC, ts_range {t['ts_range']['value']} degC")
+
+
+if __name__ == "__main__":
+    main()
