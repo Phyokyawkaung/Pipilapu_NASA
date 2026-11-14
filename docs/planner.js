@@ -39,6 +39,13 @@ const CSS = `
 .pl-need button{font:inherit;font-size:12px;color:var(--gold);background:none;border:1px solid var(--gold);border-radius:4px;padding:3px 8px;cursor:pointer}.pl-need button:hover{background:rgba(227,176,75,.1)}
 .pl-grp{border:1px solid var(--line);border-radius:6px;padding:8px 10px 10px;margin-top:8px}.pl-grp[hidden]{display:none}
 .pl-gh{display:flex;justify-content:space-between;align-items:baseline;font-size:12px}.pl-gh span{font-size:11px;color:var(--gold)}.pl-gh span.ok{color:var(--ok,#7fcf9a)}
+.pl-pres{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:10px 0 4px}
+.pl-pres label{font-size:12px;color:var(--text);font-weight:600}
+.pl-pres select{padding:5px 8px;border-radius:4px;border:1px solid var(--line);background:rgba(0,0,0,.35);color:var(--text);font:inherit;font-size:12px;cursor:pointer}
+.pl-pres select:focus{border-color:var(--acc);outline:none}
+.pl-pres-cite{font-size:11px;color:var(--mute);margin:2px 0 8px;line-height:1.4}
+.pl-pres-cite a{color:var(--acc);text-decoration:none}
+.pl-pres-cite a:hover{text-decoration:underline}
 .pl-asm small{display:block;font-size:10.5px;color:var(--mute);margin-top:3px;line-height:1.35}
 .pl-asm input:invalid{border-color:var(--bad,#ef8f7f)}
 @media(max-width:520px){.pl-in{grid-template-columns:1fr 1fr}.pl-kpi{grid-template-columns:1fr 1fr}.pl-asm{grid-template-columns:1fr}}`;
@@ -53,9 +60,9 @@ const INF = Infinity;
 const store = { get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { } } };
 
 const BP = { cfg: null, terr: {}, tid: null, site: null, T: null, c: null, roadCache: null,
-  st: { prio: 'safety', crew: '', days: '', pw: '', nuc: false, layer: 'relief', view: 'fit', a: {}, fv: {}, hab: {} } };
+  st: { prio: 'safety', preset: '', crew: '', days: '', pw: '', nuc: false, layer: 'relief', view: 'fit', a: {}, fv: {}, hab: {} } };
 window.BP = BP;
-const saveSt = () => store.set('bp-inputs', { crew: BP.st.crew, days: BP.st.days, pw: BP.st.pw, nuc: BP.st.nuc, prio: BP.st.prio, a: BP.st.a, fv: BP.st.fv });
+const saveSt = () => store.set('bp-inputs', { preset: BP.st.preset, crew: BP.st.crew, days: BP.st.days, pw: BP.st.pw, nuc: BP.st.nuc, prio: BP.st.prio, a: BP.st.a, fv: BP.st.fv });
 
 /* ---------- loading ---------- */
 async function loadCfg() {
@@ -65,7 +72,7 @@ async function loadCfg() {
   BP.cfg = await r.json();
   const saved = store.get('bp-inputs') || {};
   for (const [k, o] of Object.entries(BP.cfg.assumptions)) BP.st.a[k] = ok(o.v) ? o.v : null;  // file values (with source) first
-  Object.assign(BP.st, { crew: saved.crew ?? '', days: saved.days ?? '', pw: saved.pw ?? '', nuc: !!saved.nuc, prio: saved.prio || 'safety' });
+  Object.assign(BP.st, { preset: saved.preset || '', crew: saved.crew ?? '', days: saved.days ?? '', pw: saved.pw ?? '', nuc: !!saved.nuc, prio: saved.prio || 'safety' });
   for (const [k, v] of Object.entries(saved.a || {})) if (k in BP.st.a && ok(v)) BP.st.a[k] = v;     // then this browser's typed values
   BP.st.fv = saved.fv || {};
 }
@@ -287,8 +294,23 @@ BP.mount = async t => {
   if (T && (BP.st.layer === 'sun' || BP.st.layer === 'earth') && !T[BP.st.layer]) BP.st.layer = 'relief';
   const a = BP.st.a, A = BP.cfg.assumptions;
   const layers = [['relief', 'Relief'], ['slope', 'Slope'], ...(T && T.sun ? [['sun', 'Sunlight']] : []), ...(T && T.earth ? [['earth', 'Earth view']] : [])];
+  const presets = BP.cfg.presets || {};
+  const curPres = presets[BP.st.preset];
+  const presOpts = Object.entries(presets).map(([k, p]) =>
+    `<option value="${k}" ${BP.st.preset === k ? 'selected' : ''}>${E(p.name)} (${p.body === 'moon' ? 'Moon' : 'Mars'} · ${p.crew} crew · ${p.days} d · ${p.pw} kW)</option>`
+  ).join('');
+  const citeHtml = curPres ? `${E(curPres.desc)} · Source: <a class="lnk" href="${E(curPres.url)}" target="_blank" rel="noopener">${E(curPres.src)}</a>` : '';
   root.innerHTML = `
   <div class="pl-ban"><b>Screening estimate, not a base design.</b> Facts come from the named NASA/USGS sources or say "${NS}". Design parameters are your own choices: type them below (this browser remembers them).</div>
+  <div class="pl-pres">
+    <label for="pl-preset">Mission preset</label>
+    <select id="pl-preset">
+      <option value="">Custom (your own inputs)</option>
+      ${presOpts}
+    </select>
+    ${curPres ? `<button class="lnk" id="pl-pres-reset" style="font-size:11px">Re-apply preset</button>` : ''}
+  </div>
+  <div class="pl-pres-cite" id="pl-pres-cite">${citeHtml}</div>
   <div class="pl-in">
     <div><label for="pl-crew">Crew</label><input id="pl-crew" type="number" min="1" max="50" placeholder="enter" value="${E(BP.st.crew)}"></div>
     <div><label for="pl-days">Days</label><input id="pl-days" type="number" min="1" max="3000" placeholder="enter" value="${E(BP.st.days)}"></div>
@@ -309,7 +331,38 @@ BP.mount = async t => {
   <details class="pl-d"><summary>Rules used</summary><div id="pl-rules"></div></details>
   <details class="pl-d"><summary>Formulas</summary><div id="pl-form"></div></details>`;
   const on = (id, ev, fn) => { const el = document.getElementById(id); if (el) el.addEventListener(ev, fn); };
-  const chg = () => { saveSt(); BP.update(); };
+  const unpreset = () => {
+    if (BP.st.preset) {
+      BP.st.preset = '';
+      const sel = document.getElementById('pl-preset'); if (sel) sel.value = '';
+      const cEl = document.getElementById('pl-pres-cite'); if (cEl) cEl.innerHTML = '';
+      const rBtn = document.getElementById('pl-pres-reset'); if (rBtn) rBtn.remove();
+    }
+  };
+  const chg = () => { unpreset(); saveSt(); BP.update(); };
+  function applyPreset(k) {
+    const p = (BP.cfg.presets || {})[k];
+    if (!p) { unpreset(); saveSt(); BP.update(); return; }
+    BP.st.preset = k;
+    BP.st.crew = String(p.crew);
+    BP.st.days = String(p.days);
+    BP.st.pw = String(p.pw);
+    BP.st.nuc = !!p.nuc;
+    BP.st.prio = p.prio || 'safety';
+    for (const [ak, av] of Object.entries(p.a || {})) {
+      if (ak in BP.st.a) BP.st.a[ak] = av;
+    }
+    if (p.site_facts && p.site_facts[BP.tid]) {
+      BP.st.fv[BP.tid] = BP.st.fv[BP.tid] || {};
+      for (const [fk, fv] of Object.entries(p.site_facts[BP.tid])) {
+        BP.st.fv[BP.tid][fk] = fv;
+      }
+    }
+    saveSt();
+    BP.mount(t);
+  }
+  on('pl-preset', 'change', e => applyPreset(e.target.value));
+  on('pl-pres-reset', 'click', () => { if (BP.st.preset) applyPreset(BP.st.preset); });
   on('pl-crew', 'input', e => { BP.st.crew = e.target.value; chg(); });
   on('pl-days', 'input', e => { BP.st.days = e.target.value; chg(); });
   on('pl-pw', 'input', e => { BP.st.pw = e.target.value; chg(); });
@@ -317,14 +370,14 @@ BP.mount = async t => {
   root.querySelectorAll('.pl-asm input').forEach(i => i.addEventListener('input', e => { const k = e.target.dataset.k, v = parseFloat(e.target.value);
     BP.st.a[k] = isFinite(v) && v > 0 && !(PCT.has(k) && v > 100) ? (PCT.has(k) ? v / 100 : v) : null; e.target.setCustomValidity(PCT.has(k) && v > 100 ? 'Enter a percentage from 0 to 100' : ''); chg(); }));
   on('pl-clear', 'click', () => { if (!confirm('Clear the crew, days, power and design parameters you typed in this browser?')) return;
-    for (const [k, o] of Object.entries(BP.cfg.assumptions)) BP.st.a[k] = ok(o.v) ? o.v : null; Object.assign(BP.st, { crew: '', days: '', pw: '', fv: {} }); saveSt(); BP.mount(t); });
+    for (const [k, o] of Object.entries(BP.cfg.assumptions)) BP.st.a[k] = ok(o.v) ? o.v : null; Object.assign(BP.st, { preset: '', crew: '', days: '', pw: '', fv: {} }); saveSt(); BP.mount(t); });
   root.addEventListener('click', e => { const b = e.target.closest('[data-jump]'); if (b) jumpTo(b.dataset.jump); });
   root.querySelectorAll('#pl-prio button').forEach(b => b.addEventListener('click', () => { BP.st.prio = b.dataset.v; root.querySelectorAll('#pl-prio button').forEach(x => x.classList.toggle('on', x === b)); chg(); }));
   root.querySelectorAll('#pl-layer button').forEach(b => b.addEventListener('click', () => { BP.st.layer = b.dataset.v; root.querySelectorAll('#pl-layer button').forEach(x => x.classList.toggle('on', x === b)); BP.base = null; BP.update(true); }));
   on('pl-reset', 'click', () => { delete BP.st.hab[BP.tid]; BP.update(); });
   on('pl-view', 'click', e => { BP.st.view = BP.st.view === 'all' ? 'fit' : 'all'; e.target.textContent = BP.st.view === 'all' ? 'Zoom to base' : 'Show whole patch'; BP.update(true); });
   on('pl-png', 'click', savePng);
-  root.addEventListener('input', e => { if (!e.target.classList.contains('pl-fin')) return; const k = e.target.dataset.k, pc = (BP.site.facts[k] || {}).u === '', v = parseFloat(e.target.value) / (pc ? 100 : 1); (BP.st.fv[BP.tid] = BP.st.fv[BP.tid] || {})[k] = isFinite(v) && v >= 0 && !(pc && v > 1) ? v : null; saveSt(); BP.update(true); });
+  root.addEventListener('input', e => { if (!e.target.classList.contains('pl-fin')) return; const k = e.target.dataset.k, pc = (BP.site.facts[k] || {}).u === '', v = parseFloat(e.target.value) / (pc ? 100 : 1); (BP.st.fv[BP.tid] = BP.st.fv[BP.tid] || {})[k] = isFinite(v) && v >= 0 && !(pc && v > 1) ? v : null; unpreset(); saveSt(); BP.update(true); });
   const cv = document.getElementById('pl-cv');
   if (cv) {
     const cell = e => { const r = cv.getBoundingClientRect(), N = BP.T.N, v = BP.view || { i0: 0, j0: 0, n: N }, j = Math.floor(v.j0 + (e.clientX - r.left) / r.width * v.n), i = Math.floor(v.i0 + (e.clientY - r.top) / r.height * v.n); return i >= 0 && j >= 0 && i < N && j < N ? i * N + j : -1; };
