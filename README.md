@@ -26,7 +26,7 @@ Earth Analogus/
     data/
       grid.json, *.bin     Earth grid (made by build_grid.py). Never edit by hand
       targets.json         Moon/Mars target values (made by build_targets.py). Never edit by hand
-      sites.json           named sites for Match/Profile/Data/Heatmap (made by build_named_sites.py). Never edit by hand
+      sites.json           named sites for Match/Profile/Data (made by build_named_sites.py). Never edit by hand
       siting.json          Base planner: site facts, NASA constants, design parameters. Hand-edited, every value needs a source
       siting/<site>.json   real terrain patches (made by build_site_terrain.py). Never edit by hand
   pipeline/                Python scripts that make the files in docs/data
@@ -63,7 +63,6 @@ Do not double-click `index.html`: browsers block `fetch` on `file://` pages, so 
   - **Profile and Data:** compare the site with the best place on Earth (default), another top place, or a named analog site, using the dropdown at the top.
   - **Base plan:** the base planner (section 3).
 - **Find on Earth:** scores every 1-degree Earth cell against the site and paints the globe. Turn dimensions on or off and click a place to see why it scored as it did.
-- **Heatmap, Tour:** top bar tools. They use the named-site dataset (`docs/data/sites.json`). The heatmap shows one body at a time (Moon or Mars) and only Earth sites whose `analog_for` lists that body; the "Also consider" list in the Match tab is filtered the same way.
 - **Load data:** drop a dataset JSON (schema `earth-analogs/v1`) to replace the embedded named-site data.
 
 How the score works: per feature, `1 - min(1, |difference| / scale)`; each dimension (terrain, landform, thermal) counts equally and its features share that weight; a cell with a missing feature is scored on the rest. The `scale` of each feature is set in `build_grid.py` (`FEATURES`) and is a starting guess that needs a written justification.

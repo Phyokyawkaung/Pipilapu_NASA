@@ -110,19 +110,9 @@ h2{margin:2px 0 2px;font-size:24px;font-weight:600}
 .note2{font-size:11px;color:var(--mute);margin:10px 0 12px;line-height:1.5}
 @media(max-width:859px){.wg{grid-template-columns:1fr}}
 .alsol{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--mute);margin:12px 0 0}
-.chip.auto{border-style:dashed}.chip.alt{opacity:.8}.chip small.uf,.hm small.uf{display:block;font:500 9.5px/1.2 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--mute)}.chip small.uf{display:inline;margin-left:-4px}.hm .alt{opacity:.5}
+.chip.auto{border-style:dashed}.chip.alt{opacity:.8}.chip small.uf{display:block;font:500 9.5px/1.2 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--mute)}.chip small.uf{display:inline;margin-left:-4px}
 .top{color:var(--gold);font-style:normal;font-size:11px;margin-left:6px}
 .need.scn.on{border-color:var(--gold);color:var(--gold);background:rgba(255,200,87,.1)}
-.hmw{overflow-x:auto;margin-top:12px}
-.hm{border-collapse:separate;border-spacing:4px;min-width:100%}
-.hm th{font-weight:500;color:var(--mute);text-align:left;font-size:11px;vertical-align:bottom;padding:2px 4px}
-.hm thead th{text-align:center;min-width:62px;max-width:90px}
-.hm tbody th{color:var(--text);font-size:12px;min-width:110px}
-.hm th small{display:block;color:var(--mute);font-size:10px;text-transform:uppercase;letter-spacing:.08em}
-.hc{position:relative;width:100%;min-width:54px;height:40px;border:0;border-radius:8px;font-size:13px;font-weight:600;color:#fff}
-.hc.b{box-shadow:inset 0 0 0 2px var(--acc)}
-.hc i{position:absolute;top:5px;right:5px;width:6px;height:6px;border-radius:50%;background:#fff;opacity:.85}
-.hc:hover{filter:brightness(1.3)}
 .mockline{margin:8px 0 0;font-size:11px;color:var(--gold);letter-spacing:.04em}
 /* loading screen */
 #load{position:fixed;inset:0;z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;background:radial-gradient(ellipse at 50% 40%,#0b1226,#05070d 70%);transition:opacity .6s ease,visibility .6s}
@@ -209,11 +199,18 @@ button:focus-visible,input:focus-visible,summary:focus-visible{outline:2px solid
 #drop{background:rgba(7,8,11,.9);font-size:16px;border:1px dashed var(--acc)}
 /* panel: docked sheet */
 #panel{backdrop-filter:none;border-radius:12px 12px 0 0;border-width:1px 0 0}
+@media(max-width:859px){#panel{height:46vh;height:46dvh;min-height:180px;max-height:88vh;max-height:88dvh;padding:26px 18px 18px}}
 @media(min-width:860px){#panel{right:0;top:calc(49px + env(safe-area-inset-top,0px));bottom:0;width:min(640px,56vw);border-radius:0;border-width:0 0 0 1px}}
+#panelGrip{position:absolute;z-index:5;top:0;left:50%;width:44px;height:14px;transform:translateX(-50%);cursor:ns-resize;touch-action:none}
+#panelGrip::after{content:"";position:absolute;left:10px;right:10px;top:6px;height:3px;border-radius:2px;background:var(--mute)}
+#panelGrip:hover::after,#panelGrip:focus-visible::after{background:var(--text)}
+@media(min-width:860px){#panelGrip{top:0;bottom:0;left:0;width:12px;height:auto;transform:none;cursor:ew-resize}
+ #panelGrip::after{left:5px;right:auto;top:50%;width:2px;height:40px;transform:translateY(-50%)}}
 #x{top:14px;right:16px;font-size:22px;width:32px;height:32px;border-radius:var(--r-s)}
 #x:hover{background:var(--card);color:var(--text)}
 .kick,.grp,.alsol,.cvl{font:500 11px/1.4 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--mute)}
 .grp{margin:22px 0 6px;padding-bottom:6px;border-bottom:1px solid var(--line)}
+#panel .grp{color:var(--text)}
 h2{font-size:22px;font-weight:600;letter-spacing:-.01em;margin:4px 0 2px}
 .sub{font-size:13px;line-height:1.45}
 .mockline{font:500 11px/1.4 var(--mono);letter-spacing:.06em;text-transform:uppercase}
@@ -261,16 +258,12 @@ h2{font-size:22px;font-weight:600;letter-spacing:-.01em;margin:4px 0 2px}
 a.lnk{color:var(--text)}
 .efr.on{background:var(--sel)}
 /* numbers and tables */
-.mv,.ms,.donut span,.hc,.efs,.fr .rh span,.card b{font-variant-numeric:tabular-nums}
-.mh,.hm th,.hm thead th{font:500 10.5px/1.3 var(--mono);letter-spacing:.06em;text-transform:uppercase}
-.hm tbody th{font:inherit;font-size:12px;text-transform:none;letter-spacing:0}
+.mv,.ms,.donut span,.efs,.fr .rh span,.card b{font-variant-numeric:tabular-nums}
+.mh{font:500 10.5px/1.3 var(--mono);letter-spacing:.06em;text-transform:uppercase}
 .bar,.fr .cov{height:4px;border-radius:2px}
 .fr .cov i,.lb i{background:var(--acc)}
 .donut{width:84px;height:84px}.donut::before{inset:5px;background:var(--solid)}
 .donut span{font-size:20px}.donut small{font-family:var(--mono)}
-.hc{border-radius:var(--r-s);height:36px;font-size:12px}
-.hc.b{box-shadow:inset 0 0 0 2px var(--text)}
-.hc:hover{filter:brightness(1.2)}
 /* loading screen */
 #load{background:var(--bg)}
 #load h1{font:600 13px/1 var(--mono);letter-spacing:.16em;text-transform:uppercase;margin-bottom:10px}
@@ -283,7 +276,7 @@ a.lnk{color:var(--text)}
 <div id="load" role="status" aria-live="polite"><div class="lo"><i class="e"></i><b class="o a"><i></i></b><b class="o b"><i></i></b></div><h1>Earth Analogs Explorer</h1><p>Earth sites that stand in for the Moon and Mars</p><div class="lb"><i id="lf"></i></div><p id="lt">Loading 3D engine…</p></div>
 <div id="bar"></div>
 <div id="hint">Drag to rotate · scroll / pinch to zoom · tap a planet to fly to it</div>
-<div id="tools"><input id="q" placeholder="Search sites…" autocomplete="off"><button id="heat">Heatmap</button><button id="tour">Tour</button></div>
+<div id="tools"><input id="q" placeholder="Search sites…" autocomplete="off"></div>
 <div id="res"></div>
 <div id="panel"></div>
 <div id="toast"></div>
@@ -435,16 +428,22 @@ function rebuildMarkers(){
     mk.userData={kind:'site',key:s.id,ring,lbl:lb,ph:Math.random()};mk.visible=ring.visible=false;v.mesh.add(mk);v.mesh.add(ring);markers.push(mk)}}
 
 /* ---------- Navigation ---------- */
-let focused=null,tween=null,sel=null,shift=0,shiftT=0;
+let focused=null,tween=null,sel=null,shift=0,shiftT=0,shiftY=0,shiftYT=0,panelMode=innerWidth>=860,panelDrag=null;
 const $=id=>document.getElementById(id),bar=$('bar'),panel=$('panel'),hint=$('hint'),TOOLS=$('tools');
 function flyTo(pos,tgt,minD){tween={t0:performance.now(),dur:1500,p0:camera.position.clone(),a:controls.target.clone(),p1:pos,b:tgt,minD};controls.minDistance=Math.min(controls.minDistance,minD)}
 function setMarkers(){markers.forEach(m=>{const v=S[m.userData.key].body===focused;m.visible=m.userData.ring.visible=v;m.userData.ring.scale.setScalar(sel===m.userData.key?1.35:hov===m?1.2:1)});if(PK&&PK.pin)PK.pin.visible=PK.body===focused}
-function openPanel(h){HEAT=false;if(!EF.keep)efHide();panel.className='';panel.innerHTML=`<button id="x" onclick="overview()" aria-label="Close">×</button>`+h;panel.style.display='block';panel.scrollTop=0;shiftT=innerWidth>=860?Math.min(660,innerWidth*.58)/2+7:0}
-function overview(){efHide();tourStop();NS.from=false;focused=sel=null;panel.style.display='none';shiftT=0;hint.style.display='';setMarkers();buildBar();flyTo(OV.pos.clone(),OV.tgt.clone(),2)}
+function panelOffset(){return panel.style.display==='block'&&innerWidth>=860?panel.getBoundingClientRect().width/2+7:0}
+function openPanel(h){if(!EF.keep)efHide();panel.className='';panel.innerHTML=`<div id="panelGrip" role="separator" tabindex="0" aria-label="Resize panel"></div><button id="x" onclick="overview()" aria-label="Close">×</button>`+h;panel.style.display='block';panel.scrollTop=0;shiftT=panelOffset();shiftYT=innerWidth<860?innerHeight*.19:0;const grip=$('panelGrip');grip.setAttribute('aria-orientation',innerWidth>=860?'vertical':'horizontal')}
+function overview(){efHide();focused=sel=null;panel.style.display='none';shiftT=shiftYT=0;hint.style.display='';setMarkers();buildBar();flyTo(OV.pos.clone(),OV.tgt.clone(),2)}
+panel.addEventListener('pointerdown',e=>{if(e.target.id!=='panelGrip')return;e.preventDefault();const desktop=innerWidth>=860;panelDrag={id:e.pointerId,desktop,x:e.clientX,y:e.clientY,width:panel.getBoundingClientRect().width,height:panel.getBoundingClientRect().height};e.target.setPointerCapture(e.pointerId)});
+panel.addEventListener('pointermove',e=>{if(!panelDrag||panelDrag.id!==e.pointerId)return;const d=panelDrag;if(d.desktop){const max=Math.min(960,innerWidth*.8),min=Math.min(320,max);panel.style.width=Math.max(min,Math.min(max,d.width+d.x-e.clientX))+'px';shiftT=panelOffset()}else{const max=Math.min(innerHeight*.88,innerHeight-24),min=Math.min(180,max);panel.style.height=Math.max(min,Math.min(max,d.height+d.y-e.clientY))+'px'}});
+panel.addEventListener('pointerup',e=>{if(panelDrag&&panelDrag.id===e.pointerId)panelDrag=null});
+panel.addEventListener('pointercancel',e=>{if(panelDrag&&panelDrag.id===e.pointerId)panelDrag=null});
+panel.addEventListener('keydown',e=>{if(e.target.id!=='panelGrip')return;const desktop=innerWidth>=860;if(desktop&&e.key!=='ArrowLeft'&&e.key!=='ArrowRight'||!desktop&&e.key!=='ArrowUp'&&e.key!=='ArrowDown')return;e.preventDefault();const step=e.shiftKey?40:16,rect=panel.getBoundingClientRect();if(desktop){const max=Math.min(960,innerWidth*.8),min=Math.min(320,max),grow=e.key==='ArrowLeft'?step:-step;panel.style.width=Math.max(min,Math.min(max,rect.width+grow))+'px';shiftT=panelOffset()}else{const max=Math.min(innerHeight*.88,innerHeight-24),min=Math.min(180,max),grow=e.key==='ArrowUp'?step:-step;panel.style.height=Math.max(min,Math.min(max,rect.height+grow))+'px'}});
 function focusBody(id,key,aid){
   focused=id;sel=key||null;const v=VIS[id],c=v.mesh.position.clone();let dir,dist;
-  if(key){const s=S[key];dir=v.mesh.localToWorld(ll(s.lat,s.lon,v.R)).sub(c).normalize();dist=v.R*2.7}
-  else{dir=camera.position.clone().sub(c).normalize();dist=v.R*3.8}
+  if(key){const s=S[key];dir=v.mesh.localToWorld(ll(s.lat,s.lon,v.R)).sub(c).normalize();dist=v.R*(innerWidth<860?5.2:2.7)}
+  else{dir=camera.position.clone().sub(c).normalize();dist=v.R*(innerWidth<860?5.2:3.8)}
   setMarkers();buildBar();hint.style.display='none';flyTo(c.clone().add(dir.multiplyScalar(dist)),c,v.R*1.2);
   key?showSite(key,aid):showBody(id)}
 function buildBar(){
@@ -458,7 +457,7 @@ function toast(m){const t=$('toast');t.textContent=m;t.style.display='block';cle
 function setData(d){const e=validate(d);if(e.length){toast('Dataset rejected:\n'+e.slice(0,6).join('\n'));return false}
   DATA=d;S={};d.sites.forEach(s=>S[s.id]=s);
   for(const id of Object.keys(VIS))VIS[id].label.textContent=d.bodies[id]?d.bodies[id].name:VIS[id].name;
-  rebuildMarkers();focused=sel=null;panel.style.display='none';shiftT=0;hint.style.display='';buildBar();return true}
+  rebuildMarkers();focused=sel=null;panel.style.display='none';shiftT=shiftYT=0;hint.style.display='';buildBar();return true}
 function loadFile(f){if(!f)return;const r=new FileReader();r.onload=()=>{try{if(setData(JSON.parse(r.result))){CUSTOM=true;buildBar();toast('Loaded '+f.name+' ('+DATA.sites.length+' sites)')}}catch(x){toast('Not valid JSON: '+x.message)}};r.readAsText(f)}
 $('file').onchange=e=>{loadFile(e.target.files[0]);e.target.value=''};
 addEventListener('dragover',e=>{e.preventDefault();$('drop').style.display='flex'});
@@ -528,7 +527,7 @@ function showSite(id,aid){
     <div class="src">Sources: ${[...new Set([...Object.values(t.metrics),...Object.values(A.metrics)].map(m=>m.source))].map(k=>(DATA.sources[k]||{}).name||k).join(' · ')}.</div>`),
     placeTab=(tab==='profile'||tab==='data')&&!named;
     openPanel(head(t)+hero+tabsH+(tab==='plan'&&window.BP?BP.html(t):tab==='profile'?profileH:tab==='data'?dataH:matchH)+`
-    <div class="btns">${placeTab?'':`<button class="pri" onclick="focusBody('earth','${A.id}')">Fly to ${A.name}</button><button onclick="focusBody('${t.body}')">Back to ${DATA.bodies[t.body].name}</button>`}${NS.from==='heat'?`<button onclick="showHeat()">← Back to heatmap</button>`:''}</div>`);if(tab==='plan'&&window.BP)BP.mount(t);if(tab==='match'){mBest(id);rankFill(id,cur.a.id)}if(tab==='profile'||tab==='data')cmpFill(id,tab)}
+    <div class="btns">${placeTab?'':`<button class="pri" onclick="focusBody('earth','${A.id}')">Fly to ${A.name}</button><button onclick="focusBody('${t.body}')">Back to ${DATA.bodies[t.body].name}</button>`}</div>`);if(tab==='plan'&&window.BP)BP.mount(t);if(tab==='match'){mBest(id);rankFill(id,cur.a.id)}if(tab==='profile'||tab==='data')cmpFill(id,tab)}
   else{
     const us=DATA.sites.filter(s=>s.type==='target'&&(s.analogs||[]).some(a=>a.id===id)).map(s=>({s,c:compare(s,s.analogs.find(a=>a.id===id))}));
     const rows=DATA.metrics.map(m=>({m,x:val(t,m.key)})).filter(r=>r.x!=null);
@@ -554,27 +553,10 @@ function autoWhy(t,A){const a=val(t,'tags')||[],b=val(A,'tags')||[],sh=a.filter(
 function setW(k,v){WO[k]=+v;refreshW(false)}
 function applyPreset(k){WO={};if(k!=='default')wMetrics().forEach(m=>{WO[m.key]=+PRESETS[k](m).toFixed(2)});refreshW(true)}
 function refreshW(sync){wMetrics().forEach(m=>{const s=$('w-'+m.key),l=$('wv-'+m.key);if(!s)return;if(sync)s.value=wt(m);l.textContent=wt(m)});
-  const c=$('wcustom');if(c)c.textContent=Object.keys(WO).length?'custom':'';updScores();if(HEAT)showHeat(true)}
+  const c=$('wcustom');if(c)c.textContent=Object.keys(WO).length?'custom':'';updScores()}
 function updScores(){if(!CUR||!S[CUR.id])return;const t=S[CUR.id];let top=null;
   document.querySelectorAll('.chip b[data-a]').forEach(b=>{const id=b.dataset.a,sc=compare(t,(t.analogs||[]).find(a=>a.id===id)||{id}).score;b.textContent=pct(sc);if(id===CUR.aid)top=sc});
   const d=document.querySelector('.donut');if(d){d.style.setProperty('--p',Math.round((top||0)*100));d.querySelector('span').textContent=pct(top)}}
-
-/* ---------- Heatmap state ---------- */
-const NS={from:false};
-let HEAT=false;const HM={body:'moon'};
-function goFind(tid,aid,from){NS.from=from||false;focusBody(S[tid].body,tid,aid)}
-const PL={default:'Dataset default',geology:'Geology first',climate:'Climate first',equal:'Equal'};
-$('heat').onclick=()=>showHeat();
-function showHeat(redraw){
-  const st=panel.scrollTop,T=DATA.sites.filter(s=>s.type==='target'&&s.body===HM.body),E=[...DATA.sites.filter(s=>s.type==='analog'&&forBody(s,HM.body)),...DATA.sites.filter(s=>s.type==='analog'&&!forBody(s,HM.body))],
-    rows=T.map(t=>({t,r:E.map(A=>{const c=(t.analogs||[]).find(a=>a.id===A.id);return{A,cur:!!c,s:compare(t,c||{id:A.id}).score||0}})}));
-  openPanel(`<div class="kick">Overview</div><h2>Match heatmap</h2><div class="sub">Every ${DATA.bodies[HM.body].name} target against every Earth site. ${DATA.bodies[HM.body].name} analog sites come first; sites usually studied for another body are dimmed at the end. Click a cell to open that comparison.</div>${mockBanner()}
-  <div style="margin-top:12px"><div class="seg">${[['moon','Moon'],['mars','Mars']].map(([k,l])=>`<button class="${HM.body===k?'on':''}" onclick="HM.body='${k}';showHeat(true)">${l}</button>`).join('')}</div></div>
-  <div class="wp" style="margin-top:12px">${['default','geology','climate','equal'].map(k=>`<button onclick="applyPreset('${k}')">${PL[k]}</button>`).join('')}${Object.keys(WO).length?'<span class="cu">custom weights</span>':''}</div>
-  <div class="hmw"><table class="hm"><thead><tr><th></th>${E.map(A=>{const o=!forBody(A,HM.body);return `<th class="${o?'alt':''}" title="${A.name}${o?' · usually a '+usualFor(A)+' analog':''}">${A.name.split(',')[0]}${o?`<small class="uf">${esc(usualFor(A))}</small>`:''}</th>`}).join('')}</tr></thead><tbody>
-  ${rows.map(row=>{const best=Math.max(...row.r.map(x=>x.s));return `<tr><th>${row.t.name}<small>${DATA.bodies[row.t.body].name}</small></th>${row.r.map(x=>`<td class="${forBody(x.A,HM.body)?'':'alt'}"><button class="hc${x.s===best?' b':''}" style="background:hsl(${x.s*120} 60% ${20+x.s*16}%)" title="${row.t.name} vs ${x.A.name}: ${pct(x.s)}${x.cur?' (curated analog)':''}" onclick="goFind('${row.t.id}','${x.A.id}','heat')">${Math.round(x.s*100)}${x.cur?'<i></i>':''}</button></td>`).join('')}</tr>`}).join('')}</tbody></table></div>
-  <div class="src">Outlined = best in row · dot = curated analog · dimmed = usually studied for another body · scores follow the weights above.</div>`);
-  HEAT=true;if(redraw===true){panel.classList.add('nf');panel.scrollTop=st}}
 
 /* ---------- Coverage & gaps ----------
    Separate from the match score: for each condition, is the Earth site close enough to the target to test it?
@@ -859,32 +841,26 @@ function efBack(){EF.tid==='pick'?pkBack():showSite(EF.tid)}
 
 /* ---------- Picking ---------- */
 const ray=new THREE.Raycaster(),mouse=new THREE.Vector2();let down=null;
-renderer.domElement.addEventListener('pointerdown',e=>{down={x:e.clientX,y:e.clientY,t:performance.now()};tween=null;tourStop()});
+renderer.domElement.addEventListener('pointerdown',e=>{down={x:e.clientX,y:e.clientY,t:performance.now()};tween=null});
 renderer.domElement.addEventListener('pointerup',e=>{
   if(!down||Math.hypot(e.clientX-down.x,e.clientY-down.y)>6||performance.now()-down.t>500){down=null;return}down=null;
   mouse.set(e.clientX/innerWidth*2-1,-(e.clientY/innerHeight)*2+1);ray.setFromCamera(mouse,camera);
   const hit=ray.intersectObjects([...meshes,...markers.filter(m=>m.visible)],false)[0];if(!hit)return;const u=hit.object.userData;
   if(u.kind==='site')focusBody(S[u.key].body,u.key);else if(focused!==u.id)focusBody(u.id);else if(PK_BODIES.includes(u.id))pickAt(u.id,hit.point)});
 
-/* ---------- Hover, search, tour ---------- */
+/* ---------- Hover and search ---------- */
 renderer.domElement.addEventListener('pointermove',e=>{if(down)return;mouse.set(e.clientX/innerWidth*2-1,-(e.clientY/innerHeight)*2+1);ray.setFromCamera(mouse,camera);
   const h=ray.intersectObjects([...meshes,...markers.filter(m=>m.visible)],false)[0],n=h&&h.object.userData.kind==='site'?h.object:null;
   renderer.domElement.style.cursor=h?'pointer':'grab';if(n!==hov){hov=n;setMarkers()}});
-const Q=$('q'),RES=$('res'),TOUR=$('tour');
+const Q=$('q'),RES=$('res');
 Q.oninput=()=>{const s=Q.value.trim().toLowerCase();if(!s){RES.style.display='none';return}
   const it=[...Object.keys(VIS).map(id=>({n:DATA.bodies[id]?DATA.bodies[id].name:VIS[id].name,t:'Planet',f:()=>focusBody(id)})),...DATA.sites.map(x=>({n:x.name,t:DATA.bodies[x.body].name+' · '+(x.type==='target'?'candidate':'analog'),f:()=>focusBody(x.body,x.id)}))].filter(i=>i.n.toLowerCase().includes(s)).slice(0,8);
   RES.innerHTML='';it.forEach(i=>{const b=document.createElement('button');b.innerHTML=`${i.n}<small>${i.t}</small>`;b.onclick=()=>{i.f();Q.value='';RES.style.display='none'};RES.appendChild(b)});
   const r=Q.getBoundingClientRect();RES.style.left=r.left+'px';RES.style.top=r.bottom+4+'px';RES.style.display=it.length?'block':'none'};
-let tourT=null,tourI=0,steps=[];
-function tourStop(){clearTimeout(tourT);tourT=null;TOUR.textContent='Tour'}
-function tourStep(){const s=steps[tourI++%steps.length];focusBody(s.body,s.key,s.aid);tourT=setTimeout(tourStep,7500)}
-TOUR.onclick=()=>{if(tourT)return tourStop();steps=[];
-  DATA.sites.filter(s=>s.type==='target'&&(s.analogs||[]).length).forEach(t=>{const b=t.analogs.map(a=>({a,c:compare(t,a)})).sort((p,q)=>(q.c.score||0)-(p.c.score||0))[0].a;steps.push({body:t.body,key:t.id,aid:b.id},{body:S[b.id].body,key:b.id})});
-  if(!steps.length)return;tourI=0;TOUR.textContent='Stop tour';tourStep()};
-addEventListener('keydown',e=>{if(e.key==='Escape'){tourStop();RES.style.display='none';overview()}});
+addEventListener('keydown',e=>{if(e.key==='Escape'){RES.style.display='none';overview()}});
 
 /* ---------- Loop ---------- */
-function resize(){renderer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix()}
+function resize(){const desktop=innerWidth>=860;if(desktop!==panelMode){panel.style.width='';panel.style.height='';panelMode=desktop}renderer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();shiftT=panelOffset();shiftYT=panel.style.display==='block'&&!desktop?innerHeight*.19:0}
 addEventListener('resize',resize);resize();{const o=OV.pos.sub(OV.tgt);camera.position.copy(OV.tgt).addScaledVector(o,Math.min(1.35,650/o.length()))}controls.target.copy(OV.tgt);
 setData(JSON.parse(JSON.stringify(EMPTY)));loadBase();
 const pv=new THREE.Vector3();
@@ -919,8 +895,8 @@ function tick(now){requestAnimationFrame(tick);
   cometTick(dt);
   if(tween){const t=Math.min(1,(now-tween.t0)/tween.dur),e=t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;
     camera.position.lerpVectors(tween.p0,tween.p1,e);controls.target.lerpVectors(tween.a,tween.b,e);if(t>=1){controls.minDistance=tween.minD;tween=null}}
-  shift+=(shiftT-shift)*.12;
-  if(Math.abs(shift)>.5)camera.setViewOffset(innerWidth,innerHeight,shift,0,innerWidth,innerHeight);else camera.clearViewOffset();
+  shift+=(shiftT-shift)*.12;shiftY+=(shiftYT-shiftY)*.12;
+  if(Math.abs(shift)>.5||Math.abs(shiftY)>.5)camera.setViewOffset(innerWidth,innerHeight,shift,shiftY,innerWidth,innerHeight);else camera.clearViewOffset();
   controls.update();renderer.render(scene,camera)}
 requestAnimationFrame(tick);LD.start();
 </script>
