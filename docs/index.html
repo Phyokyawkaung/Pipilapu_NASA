@@ -209,7 +209,7 @@ button:focus-visible,input:focus-visible,summary:focus-visible{outline:2px solid
 #drop{background:rgba(7,8,11,.9);font-size:16px;border:1px dashed var(--acc)}
 /* panel: docked sheet */
 #panel{backdrop-filter:none;border-radius:12px 12px 0 0;border-width:1px 0 0}
-@media(min-width:860px){#panel{right:0;top:calc(49px + env(safe-area-inset-top,0px));bottom:0;width:min(640px,56vw);border-radius:0;border-width:0 0 0 1px}}
+@media(min-width:860px){#panel{right:0;top:calc(49px + env(safe-area-inset-top,0px));bottom:0;width:min(760px,52vw);border-radius:0;border-width:0 0 0 1px}}
 #x{top:14px;right:16px;font-size:22px;width:32px;height:32px;border-radius:var(--r-s)}
 #x:hover{background:var(--card);color:var(--text)}
 .kick,.grp,.alsol,.cvl{font:500 11px/1.4 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--mute)}
@@ -438,13 +438,14 @@ function rebuildMarkers(){
 let focused=null,tween=null,sel=null,shift=0,shiftT=0;
 const $=id=>document.getElementById(id),bar=$('bar'),panel=$('panel'),hint=$('hint'),TOOLS=$('tools');
 function flyTo(pos,tgt,minD){tween={t0:performance.now(),dur:1500,p0:camera.position.clone(),a:controls.target.clone(),p1:pos,b:tgt,minD};controls.minDistance=Math.min(controls.minDistance,minD)}
+function panelDockOffset(){return innerWidth>=860?Math.min(760,innerWidth*.52)/2+7:0}
 function setMarkers(){markers.forEach(m=>{const v=S[m.userData.key].body===focused;m.visible=m.userData.ring.visible=v;m.userData.ring.scale.setScalar(sel===m.userData.key?1.35:hov===m?1.2:1)})}
-function openPanel(h){HEAT=false;if(!EF.keep)efHide();panel.className='';panel.innerHTML=`<button id="x" onclick="overview()" aria-label="Close">×</button>`+h;panel.style.display='block';panel.scrollTop=0;shiftT=innerWidth>=860?Math.min(660,innerWidth*.58)/2+7:0}
+function openPanel(h){HEAT=false;if(!EF.keep)efHide();panel.className='';panel.innerHTML=`<button id="x" onclick="overview()" aria-label="Close">×</button>`+h;panel.style.display='block';panel.scrollTop=0;shiftT=panelDockOffset()}
 function overview(){efHide();tourStop();NS.from=false;focused=sel=null;panel.style.display='none';shiftT=0;hint.style.display='';setMarkers();buildBar();flyTo(OV.pos.clone(),OV.tgt.clone(),2)}
 function focusBody(id,key,aid){
   focused=id;sel=key||null;const v=VIS[id],c=v.mesh.position.clone();let dir,dist;
-  if(key){const s=S[key];dir=v.mesh.localToWorld(ll(s.lat,s.lon,v.R)).sub(c).normalize();dist=v.R*2.7}
-  else{dir=camera.position.clone().sub(c).normalize();dist=v.R*3.8}
+  if(key){const s=S[key];dir=v.mesh.localToWorld(ll(s.lat,s.lon,v.R)).sub(c).normalize();dist=v.R*2.55}
+  else{dir=camera.position.clone().sub(c).normalize();dist=v.R*3.5}
   setMarkers();buildBar();hint.style.display='none';flyTo(c.clone().add(dir.multiplyScalar(dist)),c,v.R*1.2);
   key?showSite(key,aid):showBody(id)}
 function buildBar(){
@@ -833,7 +834,7 @@ TOUR.onclick=()=>{if(tourT)return tourStop();steps=[];
 addEventListener('keydown',e=>{if(e.key==='Escape'){tourStop();RES.style.display='none';overview()}});
 
 /* ---------- Loop ---------- */
-function resize(){renderer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix()}
+function resize(){renderer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();shiftT=panel.style.display==='block'?panelDockOffset():0}
 addEventListener('resize',resize);resize();{const o=OV.pos.sub(OV.tgt);camera.position.copy(OV.tgt).addScaledVector(o,Math.min(1.35,650/o.length()))}controls.target.copy(OV.tgt);
 setData(JSON.parse(JSON.stringify(EMPTY)));loadBase();
 const pv=new THREE.Vector3();
