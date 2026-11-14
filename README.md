@@ -7,10 +7,12 @@ NASA Space Apps 2026, "Earth analogs for Moon/Mars". An interactive 3D solar sys
 - Earth grid for **Find on Earth** and the **Match / Profile / Data** tabs: terrain slope (NOAA ETOPO 2022) and air temperature (WorldClim 2.1).
 - Moon/Mars target values in `docs/data/targets.json`: terrain slope, measured by `pipeline/build_targets.py` from LOLA (Moon) and MOLA-HRSC (Mars).
 - Base planner terrain: NASA LOLA and USGS elevation patches, plus NASA PGDA sunlight and Earth-visibility maps at Shackleton.
+- **Pick any point** on the Moon or Mars: every 1-degree point measured the same way as the targets (`build_body_grid.py`), from LOLA LDEM_16 (Moon) and the USGS MGS MOLA 463 m DEM (Mars). Moon surface temperature from Diviner covers about 92% of the Moon.
+- Place names for Earth grid cells (country and province) from Natural Earth (`build_places.py`).
 
 **Not real yet:**
 - **Named sites** now take their numbers from real data (`docs/data/sites.json`, built by `build_named_sites.py`). Still open: site coordinates are carried over from the old dataset and not yet checked against a gazetteer, and the geology tags are team-curated with no citation (shown, not scored).
-- **Surface temperature** (`ts_mean`, `ts_range`): Earth from NASA MODIS MOD11C3 (2025, `prep_lst.py`), Moon from LRO Diviner (`prep_diviner.py`). Mars has no sourced value yet (no gridded NASA day/night surface temperature map found; MGS TES only has thermal inertia and albedo maps), so Mars sites are compared on terrain and landform only. Air temperature (WorldClim) is shown for Earth sites as context and never scored, because the Moon has no air.
+- **Surface temperature** (`ts_mean`, `ts_range`): Earth from NASA MODIS MOD11C3 (2025, `prep_lst.py`), Moon from LRO Diviner (`prep_diviner.py`, all 18 latitude bands). **Mars** has a daytime value (`ts_day`) only for Jezero, Olympus Mons and Valles Marineris, from MGS TES Data Tool exports (`prep_tes.py`); Earth gets a matching daytime value (`ts_day` = `ts_mean` + `ts_range` / 2, `build_grid.py --derive-only`). TES measures about 13:20-14:50 local time, MODIS about 10:30, so Mars is measured about 3.5 hours later in its day (stated in the source text). There is no global Mars temperature map yet, so a clicked Mars point is compared on terrain and landform only. Air temperature (WorldClim) is shown for Earth sites as context and never scored, because the Moon has no air.
 - Base-planner **design parameters** (cell efficiency, losses and so on) are the user's own choices. They start empty. Agreed team values go into `docs/data/siting.json` with a source.
 
 **Rule for everyone: no made-up numbers.** A value either has a named source, is derived from one (say how), or is typed by the user. If there is no source, the app says "No sourced value".
@@ -22,11 +24,15 @@ Earth Analogus/
     index.html             the app: 3D view, panels, Match/Profile/Data tabs, Find on Earth, all styling
     planner.js             the Base plan tab (map, placement rules, roads, sizing)
     textures.js            fallback planet images
+    vendor/three-0.128.0/  three.js r128 and OrbitControls (MIT licence), local so the site works offline
     assets/textures/       high-res planetary textures
     data/
       grid.json, *.bin     Earth grid (made by build_grid.py). Never edit by hand
       targets.json         Moon/Mars target values (made by build_targets.py). Never edit by hand
       sites.json           named sites for Match/Profile/Data (made by build_named_sites.py). Never edit by hand
+      moon_grid.json, moon_*.bin, mars_grid.json, mars_*.bin
+                           "pick any point" grids (made by build_body_grid.py). Never edit by hand
+      places.json          country/province of each Earth grid cell (made by build_places.py). Never edit by hand
       siting.json          Base planner: site facts, NASA constants, design parameters. Hand-edited, every value needs a source
       siting/<site>.json   real terrain patches (made by build_site_terrain.py). Never edit by hand
   pipeline/                Python scripts that make the files in docs/data
@@ -35,6 +41,12 @@ Earth Analogus/
     build_site_terrain.py  terrain patches for the base planner
     named_sites.json       hand-edited list of named sites: names, coordinates + source, tags + citation, body facts + source
     build_named_sites.py   named sites -> docs/data/sites.json, values read from the Earth grid and targets.json
+    build_body_grid.py     Moon or Mars "pick any point" grid (--body moon|mars)
+    build_places.py        place names for the Earth grid (Natural Earth)
+    prep_lst.py            MODIS .hdf -> Earth surface temperature maps
+    prep_diviner.py        Diviner tables -> Moon surface temperature maps
+    prep_tes.py            TES Data Tool exports -> Mars surface temperature for one site
+    fetch_data.py          downloads the raw inputs and checks them against data_manifest.json
     finder_pipeline.py     core maths: grid cells, slope, similarity, export
     raster_io.py           reads GeoTIFF files (fill values, scale factors)
     inspect_raster.py      prints what is inside a raster file
@@ -47,7 +59,7 @@ Earth Analogus/
 ```
 
 ## 1. Run the website (2 minutes)
-You need Python 3.9 or newer (`py --version` on Windows) and internet, because three.js loads from a CDN.
+You need Python 3.9 or newer (`py --version` on Windows). No internet needed: three.js is in `docs/vendor/`.
 
 1. Open a terminal in the project folder.
 2. Start a local server: `py -m http.server 8000` (Mac/Linux: `python3 -m http.server 8000`).
@@ -59,14 +71,15 @@ Do not double-click `index.html`: browsers block `fetch` on `file://` pages, so 
 ## 2. What the site does
 - **Overview, Earth, Moon, Mars:** fly around the 3D solar system. Click a site marker to open its panel.
 - **Panel tabs for a Moon/Mars site:**
-  - **Match:** "Most similar places on Earth" (the top 5 cells of the real Earth grid), then the named analog sites.
+  - **Match:** "Most similar places on Earth" (the top 5 cells of the real Earth grid, with country and province). The circle compares the site with the selected place (the best one by default); click another row or a named analog site chip to put it in the circle.
   - **Profile and Data:** compare the site with the best place on Earth (default), another top place, or a named analog site, using the dropdown at the top.
   - **Base plan:** the base planner (section 3).
 - **Find on Earth:** scores every 1-degree Earth cell against the site and paints the globe. Turn dimensions on or off and click a place to see why it scored as it did.
+- **Pick any point:** focus the Moon or Mars and click anywhere. The panel shows the measured values of the 111 km patch around that point, and "Find similar places on Earth" runs Find on Earth on them.
 - **GIS:** top banner tool that displays continuous 1-degree planetary environmental rasters across Earth (8 layers), Moon (6 layers), and Mars (4 layers) with scientific colormaps, opacity slider, smooth interpolation toggle, dynamic range legends, and click-to-probe cell coordinates and readings.
 - **Load data:** drop a dataset JSON (schema `earth-analogs/v1`) to replace the embedded named-site data.
 
-How the score works: per feature, `1 - min(1, |difference| / scale)`; each dimension (terrain, landform, thermal) counts equally and its features share that weight; a cell with a missing feature is scored on the rest. The `scale` of each feature is set in `build_grid.py` (`FEATURES`) and is a starting guess that needs a written justification.
+How the score works: per feature, `1 - min(1, |difference| / scale)`; each dimension (terrain, landform, thermal) counts equally and its features share that weight; a cell is scored only if it has a value in every dimension that is switched on (so a coastal cell cannot reach 100% on temperature alone). The `scale` of each feature is set in `build_grid.py` (`FEATURES`) and is a starting guess that needs a written justification.
 
 ## 3. Base plan tab
 Enter crew, days, power and design parameters. The planner places the habitat, solar field, batteries, landing pad, antenna, ice prospect, fission unit and science zone on real terrain with the rules in `RULES` (`docs/planner.js`), draws roads along the gentlest slopes, and sizes power, batteries and habitat volume.
@@ -95,15 +108,23 @@ Source: NASA MODIS Terra **MOD11C3 v6.1** (monthly, 0.05 degree), 12 monthly `.h
 It writes `pipeline/raw/ts_mean.tif` ((day + night) / 2) and `pipeline/raw/ts_range.tif` (day - night), averaged over the months. Then rerun `build_grid.py`. Terra passes at about 10:30 and 22:30 local solar time; use Moon/Mars maps at similar local hours and say which in `--ts-src`. GeoTIFF exports (AppEEARS: `--day/--night --scale 0.02 --nodata 0`; NEO floating point: `--day/--night`) also work.
 
 ### 4a3. Moon surface temperature (`prep_diviner.py`)
-Source: LRO Diviner Level 4 **Global Cumulative Product** (bolometric temperature, 0.5 degree bins, 0.25 h of local time, 2009-2015), https://pds-geosciences.wustl.edu/lro/lro-l-dlre-4-rdr-v1/lrodlr_1001/data/gcp/ . Download the `.tab` and `.xml` of the bands the sites need into `pipeline/raw/diviner/`: `00n10n` and `10s00s` (Tranquility), `90s80s` (Shackleton), about 156 MB each. Then:
+Source: LRO Diviner Level 4 **Global Cumulative Product** (bolometric temperature, 0.5 degree bins, 0.25 h of local time, 2009-2015), https://pds-geosciences.wustl.edu/lro/lro-l-dlre-4-rdr-v1/lrodlr_1001/data/gcp/ . Download the `.tab` and `.xml` of all 18 latitude bands (`80n90n` ... `00n10n`, `10s00s` ... `90s80s`, about 156 MB each, 2.8 GB in total) into `pipeline/raw/diviner/`. The two named Moon sites only need `00n10n`, `10s00s` and `90s80s`; "pick any point" needs all of them. Then:
 `python pipeline/prep_diviner.py --tab "pipeline/raw/diviner/global_cumul_avg_cyl_*_002.tab"`
 It writes `pipeline/raw/moon_ts_day.tif` (10:15-10:45 local time) and `moon_ts_night.tif` (22:15-22:45), in kelvin, the same hours as the MODIS overpasses. Then run `build_targets.py --site tranquility` and `--site shackleton` with `--ts-day`, `--ts-night`, `--ts-unit K` and `--ts-src`. Near the pole local time only says where the sun is in the sky, not whether it is up, so Shackleton's swing is small.
+
+### 4a4. Earth daytime surface temperature (`build_grid.py --derive-only`)
+`python pipeline/build_grid.py --derive-only` adds `ts_day` (= `ts_mean` + `ts_range` / 2, the MODIS daytime mean) to the existing grid without reading the raw rasters. It is its own dimension, "day thermal", so Moon scores do not change. A full `build_grid.py` run also writes it.
 
 ### 4b. Moon/Mars target values (`build_targets.py`)
 `python pipeline/build_targets.py` reads a 111 km patch around each site from the real elevation models, averages it to 1853 m pixels (the pixel size of the Earth elevation model), measures slope, local relief and the hypsometric integral the same way as the Earth grid (shared functions in `finder_pipeline.py`), and writes `docs/data/targets.json`. Matching the method matters: slope depends strongly on pixel size.
 - One site: `python pipeline/build_targets.py --site jezero`. Sites measured earlier are kept.
 - The Shackleton read is about 125 MB and takes a few minutes.
 - Terrain and landform only. Earth cells are 1° boxes, so they are narrower east-west than the square 111 km Moon/Mars patch away from the equator (about 29 km wide at 75° N); relief there is measured over a smaller area. Surface temperature for one site: `python pipeline/build_targets.py --site tranquility --ts-day DAY.tif --ts-night NIGHT.tif --ts-unit K --ts-src "DATASET NAME, local hours (URL)"`. It takes the mean of each map over the same 111 km patch and writes `ts_mean` and `ts_range`; other values for the site are kept. `--ts-unit` is required because lunar nights (about 100 K) cannot be told apart from degC automatically.
+
+### 4b2. Mars surface temperature for one site (`prep_tes.py`)
+Source: MGS TES Standard Data Products, queried with the TES Data Tool (Arizona State University, linked from the TES pages of the PDS Geosciences Node; the result arrives by email as a `.van.gz` file). Query a patch of about 2 x 2 degrees around the site with Observation Type = Surface, Time of Day = Day, Clear Atmosphere and Highest Spectral Quality ticked, and the fields Longitude, Latitude, Solar Longitude (Ls), Target Temperature and Local Time. The file name contains your email address: rename it (`<site>_day.van.gz`) and keep it in `pipeline/raw/tes/` (never committed).
+`python pipeline/prep_tes.py --site jezero --day pipeline/raw/tes/jezero_day.van.gz --day-only`
+It writes `ts_day` for that site into `targets.json` (sites: jezero, olympus, valles). Without `--day-only` it only prints a summary. With a night file (`--night`) it writes `ts_mean` and `ts_range` instead. Then rerun `build_named_sites.py`.
 
 ### 4c. Base planner terrain (`build_site_terrain.py`)
 `python pipeline/build_site_terrain.py` writes `docs/data/siting/<site>.json` (elevation, plus NASA sunlight and Earth-visibility maps at Shackleton). Sites: shackleton, tranquility, jezero, olympus, valles. Options: `--site NAME`, `--km 8` (closer view), `--cell 20` (cell size in metres), `--dem FILE` (use a file you downloaded), `--debug` (show network messages).
@@ -112,6 +133,17 @@ It writes `pipeline/raw/moon_ts_day.tif` (10:15-10:45 local time) and `moon_ts_n
 `python pipeline/build_named_sites.py` reads `pipeline/named_sites.json` and writes `docs/data/sites.json`. No numbers are typed in: each Earth site takes the values of the 1-degree grid cell that contains it, and each Moon/Mars site takes its values from `targets.json`. So a named site scores exactly like that cell in Find on Earth. Rerun it after `build_grid.py` or `build_targets.py`.
 - To add a site: copy an entry in `named_sites.json`, give it an id, name, `lat`/`lon` with `coord_src` (where the coordinates come from), a summary, tags with `tags_src` (citation), `analog_for` (`["moon"]`, `["mars"]` or both), then rerun.
 - Two sites in the same 1-degree cell get identical values.
+
+### 4c3. "Pick any point" grids (`build_body_grid.py`)
+Measures the four terrain/landform features around every 1-degree point of the Moon or Mars, exactly like the targets, and writes `docs/data/<body>_grid.json` and `<body>_<feature>.bin`. It prints a check against the named targets of that body; values within a few percent mean the grid agrees with `targets.json`.
+- Moon: download `ldem_16.img` and `ldem_16.lbl` (LRO LOLA Gridded Data Record, 16 px/deg, PDS Geosciences Node) into `pipeline/raw/moon_dem/`, run `prep_diviner.py` (4a3), then
+  `python pipeline/build_body_grid.py --body moon --dem pipeline/raw/moon_dem/ldem_16.lbl --dem-src "LRO LOLA Gridded Data Record LDEM_16, 16 px/deg (PDS data set LRO-L-LOLA-4-GDR-V1.0, PDS Geosciences Node)" --ts-day pipeline/raw/moon_ts_day.tif --ts-night pipeline/raw/moon_ts_night.tif`
+- Mars: download the USGS Astrogeology "Mars MGS MOLA DEM 463m" GeoTIFF (about 2.1 GB, https://astrogeology.usgs.gov/search/map/mars_mgs_mola_dem_463m) into `pipeline/raw/mars_dem/`, then
+  `python pipeline/build_body_grid.py --body mars --dem pipeline/raw/mars_dem/Mars_MGS_MOLA_DEM_mosaic_global_463m.tif --dem-src "USGS Astrogeology Mars MGS MOLA DEM 463 m (https://astrogeology.usgs.gov/search/map/mars_mgs_mola_dem_463m)"`
+  The 200 m HRSC-MOLA blend that the targets use has no overviews, so the script refuses to stream it (it would download about 11 GB). MOLA alone smooths small craters a little: at Jezero the grid's slopes are about 15% lower than the target's.
+
+### 4c4. Place names (`build_places.py`)
+`python pipeline/build_places.py` downloads the Natural Earth 1:10m Admin 1 and Admin 0 GeoJSON files (public domain) and writes `docs/data/places.json`: the province (else the country) covering most of each 1-degree cell's land. Offline: pass local copies with `--admin1 FILE --admin0 FILE`.
 
 ### 4d. If NASA/USGS reads fail ("Read failed")
 The scripts read only the part of a big file they need, over the internet, and retry on fresh connections. If a server keeps refusing:
@@ -125,6 +157,8 @@ The scripts read only the part of a big file they need, over the internet, and r
 ## 5. Data files the website reads (docs/data)
 - `grid.json`: manifest from the pipeline (cell size, shape, and each feature's label, unit, dimension, scale, source, resolution).
 - `<feature>.bin`: one array per feature (float32, row-major, row 0 = 90N, column 0 = 180W, NaN = no data).
+- `moon_grid.json`, `mars_grid.json` + `<body>_<feature>.bin`: "pick any point" grids, same layout as the Earth grid; each value describes the 111.2 km patch centred on the cell centre.
+- `places.json`: `names` (list) and `cells` (64,800 indexes into `names`, -1 = no land in Natural Earth).
 - `targets.json`: Moon/Mars target value per site and feature, each with its source text. Site ids: `shackleton`, `tranquility`, `jezero`, `olympus`, `valles`. `"demo": false` means real.
 - `sites.json`: named sites in schema `earth-analogs/v1` (sources, metrics, bodies, sites, needs, scenarios). Generated.
 - `siting.json`: constants with source and URL, design parameters (`assumptions`, empty until agreed), per-site facts (`null` = no sourced value).

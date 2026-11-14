@@ -141,6 +141,7 @@ h2{margin:2px 0 2px;font-size:24px;font-weight:600}
 .efs{display:flex;justify-content:space-between;font-size:11px;color:var(--mute)}
 .efr{display:grid;grid-template-columns:24px 1fr auto;gap:8px;align-items:baseline;width:100%;text-align:left;background:transparent;border:0;border-bottom:1px solid var(--line);color:var(--text);padding:8px 2px;font-size:13px;cursor:pointer}
 .efr.on{background:rgba(94,200,255,.1)}
+.efr .pn{display:block;color:var(--mute);font-size:11.5px;margin-top:1px}
 .ck{display:flex;gap:8px;align-items:flex-start;font-size:13px;margin:8px 0}
 .ck input{margin-top:3px}.ck small{display:block;font-size:11px;color:var(--mute);margin-top:2px}
 .tg.ok{border-color:#6ee7a0;color:#6ee7a0;background:rgba(110,231,160,.08)}
@@ -291,8 +292,8 @@ a.lnk{color:var(--text)}
 <div id="drop">Drop a dataset .json to load it</div>
 <input type="file" id="file" accept=".json,application/json" hidden>
 <script src="textures.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="vendor/three-0.128.0/three.min.js"></script><!-- three.js r128, MIT licence (vendor/three-0.128.0/LICENSE); local so the site works offline -->
+<script src="vendor/three-0.128.0/OrbitControls.js"></script>
 <script>if(!(window.THREE&&THREE.OrbitControls)){document.getElementById('load').classList.add('err');document.getElementById('lt').textContent='Could not load the 3D library (three.js) from the CDN. Check your internet connection and reload the page.'}</script>
 <script>
 /* =====================================================================
@@ -454,7 +455,7 @@ function focusBody(id,key,aid){
   else{dir=camera.position.clone().sub(c).normalize();dist=v.R*(innerWidth<860?5.2:3.8)}
   setMarkers();buildBar();hint.style.display='none';flyTo(c.clone().add(dir.multiplyScalar(dist)),c,v.R*1.2);
   if(GIS.active){gisRenderPanel();return}
-  key?showSite(key,aid):showBody(id)}
+  key?showSite(key,aid,!!aid):showBody(id)}
 function buildBar(){
   bar.innerHTML='';
   [['','Overview'],['earth','Earth'],['moon','Moon'],['mars','Mars']].forEach(([id,t])=>{
@@ -513,36 +514,35 @@ function showBody(id){const b=DATA.bodies[id];if(!b)return showDeco(id);
   ${PK_BODIES.includes(id)?`<div class="tabhint">Click anywhere on the ${esc(b.name)} to see the terrain around that point and find the most similar places on Earth.</div>`:''}
   <div class="grp">Key facts</div>${(b.facts||[]).map(f=>`<div class="mr one"><div class="ml">${f.label}</div><div class="mv">${f.value}</div></div>`).join('')}
   <div class="grp">Sites</div>${DATA.sites.filter(s=>s.body===id).map(s=>`<button class="card" onclick="focusBody('${id}','${s.id}')"><span>${s.name}</span><b>${s.type==='target'?'candidate':'analog'}</b></button>`).join('')}`)}
-function showSite(id,aid){
+function showSite(id,aid,asNamed){
   const t=S[id];
   if(t.type==='target'){
     const lst=(t.analogs||[]).map(a=>({a,A:S[a.id],c:compare(t,a)})),ids=new Set(lst.map(x=>x.a.id)),
       rank=f=>DATA.sites.filter(s=>s.type==='analog'&&!ids.has(s.id)&&f(s)).map(A=>{const a={id:A.id,why:autoWhy(t,A)};return{a,A,c:compare(t,a),auto:true,alt:!forBody(A,t.body)}}).sort((p,q)=>(q.c.score||0)-(p.c.score||0)),
       aut=rank(s=>forBody(s,t.body)).slice(0,3),alt=rank(s=>!forBody(s,t.body)).slice(0,3),an=[...lst,...aut,...alt];
     if(!an.length){openPanel(head(t)+`<p class="sub">${t.summary||''}</p>`);return}
-    const cur=an.find(x=>x.a.id===aid)||(lst.length?lst:an).reduce((p,q)=>(q.c.score||0)>(p.c.score||0)?q:p),A=cur.A,E=DATA.bodies[A.body];if(!CUR||CUR.id!==id){TB.v='match';TB.cmp='p0'}CUR={id,aid:cur.a.id};
-    const chip=x=>`<button class="chip${x===cur?' on':''}${x.auto?' auto':''}${x.alt?' alt':''}" onclick="showSite('${id}','${x.a.id}')"${x.alt?` title="Usually studied as a ${esc(usualFor(x.A))} analog"`:''}>${x.A.name}${x.alt?`<small class="uf">${esc(usualFor(x.A))}</small>`:''}<b data-a="${x.a.id}">${pct(x.c.score)}</b></button>`;
+    const cur=an.find(x=>x.a.id===aid)||(lst.length?lst:an).reduce((p,q)=>(q.c.score||0)>(p.c.score||0)?q:p),A=cur.A,E=DATA.bodies[A.body];if(!CUR||CUR.id!==id){TB.v='match';TB.cmp='p0'}if(asNamed)TB.cmp='n';CUR={id,aid:cur.a.id};const named=TB.cmp==='n';
+    const chip=x=>`<button class="chip${named&&x===cur?' on':''}${x.auto?' auto':''}${x.alt?' alt':''}" onclick="setCmp('${id}','n:${x.a.id}')"${x.alt?` title="Usually studied as a ${esc(usualFor(x.A))} analog"`:''}>${x.A.name}${x.alt?`<small class="uf">${esc(usualFor(x.A))}</small>`:''}<b data-a="${x.a.id}">${pct(x.c.score)}</b></button>`;
     const tab=TB.v,
     hero=`<div class="hero"><div class="ht"><b>Where on Earth is most like ${t.name}?</b><span>Scores every place on the planet against this site and paints the best matches on the globe.</span></div><button class="go" onclick="efStart('${t.id}')">Find on Earth</button></div>`,
     tabsH=`<div class="tabs" role="tablist">${[['match','Match'],['profile','Profile'],['data','Data'],...(window.BP?[['plan','Base plan']]:[])].map(([k,l])=>`<button role="tab" aria-selected="${tab===k}" class="${tab===k?'on':''}" onclick="setTab('${k}')">${l}</button>`).join('')}</div>`,
-    matchH=`<div id="mbest"></div><div class="grp">Named analog sites</div>${namedMock()}<div class="tabhint" style="margin-top:8px">Earth sites the team curated for this target. Pick one to compare in detail.</div><div class="chips" style="margin-top:8px">${lst.map(chip).join('')}</div>${aut.length?`<div class="alsol">Also consider · auto-ranked among ${DATA.bodies[t.body].name} analog sites</div><div class="chips" style="margin-top:6px">${aut.map(chip).join('')}</div>`:''}${alt.length?`<div class="alsol">Similar terrain · usually studied for another body</div><div class="tabhint" style="margin-top:4px">These sites score well on the measurements but are known as analogs for ${alt.length>1?'other bodies':esc(usualFor(alt[0].A))}. Useful for terrain tests; check whether they fit your mission.</div><div class="chips" style="margin-top:6px">${alt.map(chip).join('')}</div>`:''}
-    <div class="vs"><div class="side"><div class="kick">${DATA.bodies[t.body].name} target</div><h3>${t.name}</h3><p>${t.summary||''}</p></div>
+    matchH=`<div id="mbest"></div><div class="grp">Named analog sites</div>${namedMock()}<div class="tabhint" style="margin-top:8px">Earth sites the team curated for this target. Pick one to compare it in the circle below.</div><div class="chips" style="margin-top:8px">${lst.map(chip).join('')}</div>${aut.length?`<div class="alsol">Also consider · auto-ranked among ${DATA.bodies[t.body].name} analog sites</div><div class="chips" style="margin-top:6px">${aut.map(chip).join('')}</div>`:''}${alt.length?`<div class="alsol">Similar terrain · usually studied for another body</div><div class="tabhint" style="margin-top:4px">These sites score well on the measurements but are known as analogs for ${alt.length>1?'other bodies':esc(usualFor(alt[0].A))}. Useful for terrain tests; check whether they fit your mission.</div><div class="chips" style="margin-top:6px">${alt.map(chip).join('')}</div>`:''}
+    ${named?`<div class="vs"><div class="side"><div class="kick">${DATA.bodies[t.body].name} target</div><h3>${t.name}</h3><p>${t.summary||''}</p></div>
     <div class="donut" style="--p:${Math.round((cur.c.score||0)*100)}"><span>${pct(cur.c.score)}</span><small>MATCH</small></div>
     <div class="side an"><div class="kick">${E.name} analog</div><h3>${A.name}</h3><p>${A.summary||''}</p></div></div>
     <div class="note2" style="text-align:center;margin:-4px 0 10px"><button class="lnk" onclick="showMethod()">How is this score calculated?</button></div>
     ${cur.a.why?`<div class="why">${cur.a.why}</div>`:''}<div class="note2" id="rk-${cur.a.id}"></div>
-    ${covHTML(t,A)}
+    ${covHTML(t,A)}`:'<div id="mvs"><div class="note2">Scoring every place on Earth…</div></div>'}
     ${weightsHTML()}`,
-    named=TB.cmp==='n',
     cmpSel=`<div class="cmpsel"><label for="cmp">Compare ${t.name} with</label><select id="cmp" onchange="setCmp('${id}',this.value)">
       <optgroup label="Most similar places on Earth (real data)" id="cmp-places">${named?'<option value="p0">Most similar place on Earth</option>':`<option value="${TB.cmp}" selected>Loading…</option>`}</optgroup>
       <optgroup label="Named analog sites">${an.map(x=>`<option value="n:${x.a.id}"${named&&x===cur?' selected':''}>${x.A.name}</option>`).join('')}</optgroup></select></div>`,
     profileH=cmpSel+(named?`${namedMock()}<div class="tabhint">How ${t.name} and ${A.name} overlap across the measurements. More overlap means more alike.</div>${radar(t,A)||'<div class="sub" style="margin-top:14px">Not enough shared numeric measurements to draw a profile.</div>'}`:'<div id="cmpb"><div class="note2">Scoring every place on Earth…</div></div>'),
     dataH=cmpSel+(!named?'<div id="cmpb"><div class="note2">Scoring every place on Earth…</div></div>':`${namedMock()}<div class="tabhint">Side-by-side values, grouped by category. The bar shows how similar each value is.</div>${groups(cur.c.rows).map(g=>`<div class="gc">${gh(g.n)}<div class="mh"><div></div><div>${t.name}</div><div>${A.name}</div><div>Similarity</div></div>${g.r.map(r=>`<div class="mr"><div class="ml">${r.m.label}</div><div class="mv" title="${srcName(t,r.m.key)}">${cell(r.m,r.x,r.y)}</div><div class="mv" title="${srcName(A,r.m.key)}">${cell(r.m,r.y,r.x)}</div><div class="ms">${r.sim==null?'':`<div class="bar"><i style="width:${r.sim*100}%;background:hsl(${r.sim*120} 65% 52%)"></i></div><span>${Math.round(r.sim*100)}%</span>`}</div></div>`).join('')}</div>`).join('')}
     <div class="src">Sources: ${[...new Set([...Object.values(t.metrics),...Object.values(A.metrics)].map(m=>m.source))].map(k=>(DATA.sources[k]||{}).name||k).join(' · ')}.</div>`),
-    placeTab=(tab==='profile'||tab==='data')&&!named;
+    placeTab=(tab==='profile'||tab==='data'||tab==='match')&&!named;
     openPanel(head(t)+hero+tabsH+(tab==='plan'&&window.BP?BP.html(t):tab==='profile'?profileH:tab==='data'?dataH:matchH)+`
-    <div class="btns">${placeTab?'':`<button class="pri" onclick="focusBody('earth','${A.id}')">Fly to ${A.name}</button><button onclick="focusBody('${t.body}')">Back to ${DATA.bodies[t.body].name}</button>`}</div>`);if(tab==='plan'&&window.BP)BP.mount(t);if(tab==='match'){mBest(id);rankFill(id,cur.a.id)}if(tab==='profile'||tab==='data')cmpFill(id,tab)}
+    <div class="btns">${placeTab?'':`<button class="pri" onclick="focusBody('earth','${A.id}')">Fly to ${A.name}</button><button onclick="focusBody('${t.body}')">Back to ${DATA.bodies[t.body].name}</button>`}</div>`);if(tab==='plan'&&window.BP)BP.mount(t);if(tab==='match'){mBest(id);if(named)rankFill(id,cur.a.id)}if(tab==='profile'||tab==='data')cmpFill(id,tab)}
   else{
     const us=DATA.sites.filter(s=>s.type==='target'&&(s.analogs||[]).some(a=>a.id===id)).map(s=>({s,c:compare(s,s.analogs.find(a=>a.id===id))}));
     const rows=DATA.metrics.map(m=>({m,x:val(t,m.key)})).filter(r=>r.x!=null);
@@ -571,7 +571,7 @@ function refreshW(sync){wMetrics().forEach(m=>{const s=$('w-'+m.key),l=$('wv-'+m
   const c=$('wcustom');if(c)c.textContent=Object.keys(WO).length?'custom':'';updScores()}
 function updScores(){if(!CUR||!S[CUR.id])return;const t=S[CUR.id];let top=null;
   document.querySelectorAll('.chip b[data-a]').forEach(b=>{const id=b.dataset.a,sc=compare(t,(t.analogs||[]).find(a=>a.id===id)||{id}).score;b.textContent=pct(sc);if(id===CUR.aid)top=sc});
-  const d=document.querySelector('.donut');if(d){d.style.setProperty('--p',Math.round((top||0)*100));d.querySelector('span').textContent=pct(top)}}
+  const d=document.querySelector('.donut');if(d&&TB.cmp==='n'){d.style.setProperty('--p',Math.round((top||0)*100));d.querySelector('span').textContent=pct(top)}}
 
 /* ---------- Coverage & gaps ----------
    Separate from the match score: for each condition, is the Earth site close enough to the target to test it?
@@ -685,17 +685,26 @@ async function mBest(tid){
   const box=()=>CUR&&CUR.id===tid?$('mbest'):null;if(!box())return;
   box().innerHTML='<div class="grp">Most similar places on Earth</div><div class="note2">Scoring every place on Earth…</div>';
   const B=await bestPlaces(tid),b=box();if(!b)return;
-  if(B.err){b.innerHTML=`<div class="grp">Most similar places on Earth</div><div class="note2">Not available yet. ${B.err}</div>`;return}
-  const g=B.g;
+  if(B.err){b.innerHTML=`<div class="grp">Most similar places on Earth</div><div class="note2">Not available yet. ${B.err}</div>`;if(TB.cmp!=='n'){TB.cmp='n';showSite(tid,CUR.aid)}return}
+  const g=B.g,t=S[tid],k=TB.cmp==='n'?-1:Math.max(0,Math.min(+TB.cmp.slice(1)||0,B.picks.length-1)),p=B.picks[k],mv=$('mvs');
+  if(mv&&!p){TB.cmp='n';showSite(tid,CUR.aid);return}
+  /* The circle on the Match tab: the selected most-similar place (default: the best one). Same grid score as the list. */
+  if(mv)mv.innerHTML=`<div class="vs"><div class="side"><div class="kick">${DATA.bodies[t.body].name} target</div><h3>${esc(t.name)}</h3><p>${t.summary||''}</p></div>
+    <div class="donut" style="--p:${Math.round(p.s*100)}"><span>${pct(p.s)}</span><small>MATCH</small></div>
+    <div class="side an"><div class="kick">Earth place #${k+1}</div><h3>${efLL(p.la,p.lo)}</h3><p>${efPN(p.i)?esc(efPN(p.i))+'. ':''}${p.k?'Near '+esc(p.k.name)+'. ':''}One ${g.cell_deg}° grid cell, about ${Math.round(g.cell_deg*111)} km across, scored on ${B.use.length} measured features.</p></div></div>
+    <div class="gc"><div class="mh"><div></div><div>${esc(t.name)}</div><div>${efLL(p.la,p.lo)}</div><div>Similarity</div></div>
+    ${B.use.map(f=>{const v=EF.feats[f.key][p.i],tv=B.T[f.key].value,sim=v===v?1-Math.min(1,Math.abs(v-tv)/(f.scale||1)):null;return `<div class="mr"><div class="ml">${esc(f.label)}<small>${esc(cap(f.dimension))}</small></div><div class="mv">${fmt2(tv)}<small>${un(f.unit)}</small></div><div class="mv">${v===v?fmt2(v)+`<small>${un(f.unit)}</small>`:'<span class="na">no data</span>'}</div><div class="ms">${sim==null?'<span class="na">not scored</span>':`<div class="bar"><i style="width:${sim*100}%;background:hsl(${sim*120} 65% 52%)"></i></div><span>${Math.round(sim*100)}%</span>`}</div></div>`}).join('')}</div>
+    <div class="note2">Each dimension counts equally; features inside one share its weight. The weights below apply to the named sites only.</div>
+    <div class="btns"><button class="pri" onclick="mBestOpen('${tid}',${p.i})">Show this place on the globe</button><button onclick="focusBody('${t.body}')">Back to ${DATA.bodies[t.body].name}</button></div>`;
   b.innerHTML=`<div class="grp">Most similar places on Earth</div>${realLine(B)}
   <div class="tabhint">Every ${g.cell_deg}° cell of Earth (about ${Math.round(g.cell_deg*111)} km) scored against ${esc(S[tid].name)} on: ${B.use.map(f=>esc(f.label)).join('; ')}.</div>
-  ${B.picks.map((p,k)=>`<button class="efr" onclick="mBestOpen('${tid}',${p.i})"><b>${k+1}</b><span>${efLL(p.la,p.lo)}${p.k?` <span class="cu">near ${esc(p.k.name)}</span>`:''}</span><b>${pct(p.s)}</b></button>`).join('')||'<div class="note2">No cells to rank.</div>'}
-  <div class="note2">Places at least 800 km apart. Pick one to see it on the globe, or open Profile and Data to compare it in detail. Named sites below are scored the same way at the grid cell that contains them, so with default weights the percentages are comparable. Sources: ${srcList(B).map(esc).join(' · ')}.</div>`}
+  ${B.picks.map((p,j)=>`<button class="efr${j===k?' on':''}" onclick="setCmp('${tid}','p${j}')"><b>${j+1}</b><span>${efLL(p.la,p.lo)}${p.k?` <span class="cu">near ${esc(p.k.name)}</span>`:''}${efPNh(p.i)}</span><b>${pct(p.s)}</b></button>`).join('')||'<div class="note2">No cells to rank.</div>'}
+  <div class="note2">Places at least 800 km apart. Pick one to compare it in the circle below, or open Profile and Data for more detail. Named sites below are scored the same way, on the grid cell that contains them, so with default weights the percentages are comparable. A place tagged “near” a named site is a different cell up to 500 km away, so its score can differ from that site’s own. Sources: ${srcList(B).map(esc).join(' · ')}.</div>`}
 async function cmpFill(tid,tab){
   const B=await bestPlaces(tid);if(!CUR||CUR.id!==tid||TB.v!==tab||TB.cmp==='n')return;const box=$('cmpb'),og=$('cmp-places');if(!box)return;
   if(B.err){if(og)og.innerHTML='<option disabled selected>Not available</option>';box.innerHTML=`<div class="note2">${B.err} Meanwhile, pick a named analog site above.</div>`;return}
   const k=Math.max(0,Math.min(+TB.cmp.slice(1)||0,B.picks.length-1)),p=B.picks[k],t=S[tid],T=B.T,F=EF.feats;
-  if(og)og.innerHTML=B.picks.map((q,j)=>`<option value="p${j}"${j===k?' selected':''}>${j+1}. ${efLL(q.la,q.lo)} · ${pct(q.s)}${q.k?' · near '+esc(q.k.name):''}</option>`).join('');
+  if(og)og.innerHTML=B.picks.map((q,j)=>`<option value="p${j}"${j===k?' selected':''}>${j+1}. ${efLL(q.la,q.lo)}${efPN(q.i)?' · '+esc(efPN(q.i)):''} · ${pct(q.s)}${q.k?' · near '+esc(q.k.name):''}</option>`).join('');
   if(!p){box.innerHTML='<div class="note2">No cells to rank.</div>';return}
   const name=efLL(p.la,p.lo),rows=B.g.features.map(f=>{const v=F[f.key][p.i],tv=T[f.key]?T[f.key].value:null;return{f,v:v===v?v:null,tv,sim:tv!=null&&v===v?1-Math.min(1,Math.abs(v-tv)/(f.scale||1)):null}});
   const unscored=rows.filter(r=>r.tv==null).map(r=>r.f.label);
@@ -704,7 +713,7 @@ async function cmpFill(tid,tab){
   <div class="btns"><button class="pri" onclick="mBestOpen('${tid}',${p.i})">Show this place on the globe</button><button onclick="focusBody('${t.body}')">Back to ${DATA.bodies[t.body].name}</button></div>`;
   const vs=`<div class="vs"><div class="side"><div class="kick">${DATA.bodies[t.body].name} target</div><h3>${esc(t.name)}</h3><p>Measured over a ${EF.targets.patch_km||111} km patch around the site.</p></div>
     <div class="donut" style="--p:${Math.round(p.s*100)}"><span>${pct(p.s)}</span><small>MATCH</small></div>
-    <div class="side an"><div class="kick">Earth place #${k+1}</div><h3>${name}</h3><p>${p.k?'Near '+esc(p.k.name)+'. ':''}One ${B.g.cell_deg}° grid cell, about ${Math.round(B.g.cell_deg*111)} km across.</p></div></div>`;
+    <div class="side an"><div class="kick">Earth place #${k+1}</div><h3>${name}</h3><p>${efPN(p.i)?esc(efPN(p.i))+'. ':''}${p.k?'Near '+esc(p.k.name)+'. ':''}One ${B.g.cell_deg}° grid cell, about ${Math.round(B.g.cell_deg*111)} km across.</p></div></div>`;
   if(tab==='data'){
     box.innerHTML=`${realLine(B)}<div class="tabhint">Measured values side by side. The bar shows how similar each value is.</div>
     <div class="gc"><div class="mh"><div></div><div>${esc(t.name)}</div><div>${name}</div><div>Similarity</div></div>
@@ -738,7 +747,12 @@ async function efLoad(){
   const g=await (await get('data/grid.json')).json();
   for(const f of g.features){const b=await (await get('data/'+f.key+'.bin')).arrayBuffer();if(b.byteLength!==g.ny*g.nx*4)throw new Error(f.key+'.bin does not match the size in grid.json');feats[f.key]=new Float32Array(b)}
   let t=null;try{t=await (await get('data/targets.json')).json()}catch(e){}
-  EF.grid=g;EF.feats=feats;EF.targets=t}
+  let pl=null;try{pl=await (await get('data/places.json')).json()}catch(e){}/* optional: pipeline/build_places.py */
+  EF.grid=g;EF.feats=feats;EF.targets=t;EF.places=pl}
+/* Country and province of a grid cell (Natural Earth, see places.json). A cell with no land there borrows a neighbour's name as "near ...". */
+function efPN(i){const P=EF.places;if(!P||!P.cells)return '';const k=P.cells[i];if(k>=0)return P.names[k];const r=Math.floor(i/P.nx),c=i%P.nx;
+  for(const[dr,dc]of[[0,1],[0,-1],[1,0],[-1,0],[1,1],[1,-1],[-1,1],[-1,-1]]){const rr=r+dr;if(rr<0||rr>=P.ny)continue;const q=P.cells[rr*P.nx+(c+dc+P.nx)%P.nx];if(q>=0)return 'near '+P.names[q]}return ''}
+const efPNh=i=>{const n=efPN(i);return n?`<small class="pn">${esc(n)}</small>`:''};
 function efScore(){
   const g=EF.grid,T=EF.targets.targets[EF.tid]||{},n=g.ny*g.nx,use=g.features.filter(f=>EF.on[f.dimension]&&T[f.key]),per={};
   use.forEach(f=>per[f.dimension]=(per[f.dimension]||0)+1);
@@ -800,10 +814,10 @@ function efDraw(){
   <div class="needs" style="margin:6px 0 4px">${dims.map(d=>`<button class="need${EF.on[d]?' on':''}" aria-pressed="${!!EF.on[d]}" onclick="efToggle('${d}')">${esc(cap(d))}</button>`).join('')}</div>
   <details class="wts"><summary>Target values and sources</summary><div style="padding-bottom:8px">${dims.map(d=>`<div style="padding:4px 0 8px"><b style="font-size:13px">${esc(cap(d))}</b>${g.features.filter(f=>f.dimension===d&&T[f.key]).map(f=>`<div class="note2" style="margin:2px 0">${esc(f.label)}: target ${fmt(T[f.key].value)} ${esc(f.unit)} · ${esc(T[f.key].source||'no source')}</div>`).join('')}</div>`).join('')}</div></details>
   <div class="grp">Best distinct places</div>
-  ${EF.picks.map((p,k)=>`<button class="efr${p.i===EF.sel?' on':''}" onclick="efSel(${p.i})"><b>${k+1}</b><span>${efLL(p.la,p.lo)}${p.k?` <span class="cu">near ${esc(p.k.name)}</span>`:''}</span><b>${pct(p.s)}</b></button>`).join('')||'<div class="note2">No cells to rank.</div>'}
+  ${EF.picks.map((p,k)=>`<button class="efr${p.i===EF.sel?' on':''}" onclick="efSel(${p.i})"><b>${k+1}</b><span>${efLL(p.la,p.lo)}${p.k?` <span class="cu">near ${esc(p.k.name)}</span>`:''}${efPNh(p.i)}</span><b>${pct(p.s)}</b></button>`).join('')||'<div class="note2">No cells to rank.</div>'}
   <div class="note2">Places at least 800 km apart, so one region does not fill the list.</div>
   <label class="ck"><input type="checkbox" ${EF.hideKnown?'checked':''} onchange="efKnown(this.checked)"><span>Hide places we already know<small>within 500 km of our Earth analog sites; tagged “near …” when shown</small></span></label>
-  ${sp?`<div class="grp">Why ${efLL(sp.la,sp.lo)}</div><div class="mh m4"><div>Feature</div><div>Target</div><div>This cell</div><div>Similarity</div></div>
+  ${sp?`<div class="grp">Why ${efLL(sp.la,sp.lo)}${efPN(sp.i)?' · '+esc(efPN(sp.i)):''}</div><div class="mh m4"><div>Feature</div><div>Target</div><div>This cell</div><div>Similarity</div></div>
   ${use.map(f=>{const v=EF.feats[f.key][EF.sel],tv=T[f.key].value,sim=v===v?1-Math.min(1,Math.abs(v-tv)/(f.scale||1)):null;return `<div class="mr m4"><div class="ml">${esc(f.label)}<small>${esc(f.dimension)}</small></div><div>${fmt(tv)} ${esc(f.unit)}</div><div>${v===v?fmt(v)+' '+esc(f.unit):'no data'}</div><div>${pct(sim)}</div></div>`}).join('')}`:''}
   <div class="note2">Each dimension counts equally; features inside one share its weight. Cells are ${g.cell_deg}° boxes, so small features are averaged away. Earth cannot reproduce gravity, vacuum or radiation, so a high score here is a lead to check, not a verdict.</div>
   <div class="btns"><button class="pri" onclick="efBack()">Back to ${esc(S[EF.tid].name)}</button></div>`}
@@ -816,7 +830,7 @@ var PK={grids:{},body:null,lat:null,lon:null,T:null,pin:null},PK_BODIES=['moon',
 /* Which Earth-grid features each body is compared on, and why a missing one is missing. Text only, no numbers. */
 const PK_INFO={
   moon:{keys:['slope_p90','slope_median','relief','hypso','ts_mean','ts_range'],
-    note:'Moon surface temperature exists only where Diviner data were downloaded (about 10°S to 10°N and 80°S to 90°S)'},
+    note:'Moon surface temperature is missing where LRO Diviner has too few observations between 10:15 and 10:45 or between 22:15 and 22:45 local time (scattered strips, about 8% of the Moon)'},
   mars:{keys:['slope_p90','slope_median','relief','hypso','ts_day'],
     note:'Mars daytime surface temperature is measured only for Jezero Crater, Olympus Mons and Valles Marineris (MGS TES). There is no global Mars temperature grid yet, so a picked point is compared on terrain and landform'}};
 async function pkLoad(body){
