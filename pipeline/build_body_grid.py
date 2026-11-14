@@ -1,13 +1,17 @@
-"""Moon grid for "pick any point": the same terrain/landform features as targets.json, measured around EVERY 1-degree
-point of the Moon, so the website can compare any clicked point with Earth. Writes docs/data/moon_grid.json + moon_<key>.bin.
+"""Moon or Mars grid for "pick any point": the same terrain/landform features as targets.json, measured around EVERY
+1-degree point of the body, so the website can compare any clicked point with Earth.
+Writes docs/data/<body>_grid.json + <body>_<key>.bin (body = moon or mars).
 
-  python pipeline/build_body_grid.py --dem pipeline/raw/moon_dem/ldem_16.lbl --dem-src "NAME (PAGE URL)"
+  python pipeline/build_body_grid.py --body moon --dem pipeline/raw/moon_dem/ldem_16.lbl --dem-src "NAME (PAGE URL)"
+  python pipeline/build_body_grid.py --body mars --dem pipeline/raw/mars_dem/FILE.tif --dem-src "NAME (PAGE URL)"
+  (--dem may also be an https URL of a Cloud Optimized GeoTIFF that has overviews: only the overview level is read.)
+  Mars has no global surface temperature map in this project yet, so the Mars grid is terrain and landform only.
   with Moon surface temperature where Diviner maps exist (made by prep_diviner.py; empty outside the bands you downloaded):
   python pipeline/build_body_grid.py --dem ... --dem-src "..." --ts-day pipeline/raw/moon_ts_day.tif --ts-night pipeline/raw/moon_ts_night.tif
 
-Input: one GLOBAL simple-cylindrical lunar elevation file that GDAL can open (GeoTIFF, or PDS .lbl/.img), ideally about
+Input: one GLOBAL simple-cylindrical elevation file that GDAL can open (GeoTIFF, or PDS .lbl/.img), ideally about
 1.9 km per pixel (for example the LOLA gridded DEM at 16 pixels per degree). Bigger files are averaged down while reading.
-Values may be heights (m) or radii (m, about 1,737,400); radii are converted to heights.
+Values may be heights (m) or radii (m, about 1,737,400 Moon / 3,396,190 Mars); radii are converted to heights.
 
 Method, matching build_targets.py as closely as a global file allows:
   for each grid point (cell centres 89.5N..89.5S, 179.5W..179.5E, the Earth grid layout), take a 111.2 km x 111.2 km patch
@@ -15,7 +19,7 @@ Method, matching build_targets.py as closely as a global file allows:
   elevation file bilinearly, then compute slope (central differences), its 90th percentile and median, local relief
   (95th minus 5th percentile) and the hypsometric integral, with the same formulas as finder_pipeline.py.
   Difference from build_targets.py: targets are averaged from a 118 m (or 20 m) model; here the global model is sampled at
-  about its own resolution. The script measures Tranquility both ways and prints the difference, so you can judge it.
+  about its own resolution. The script measures the named targets of the body both ways and prints the differences.
 Surface temperature (optional): nearest-pixel mean of the two Diviner maps over the same 60 x 60 points, (day + night) / 2
   and day - night in degC, exactly like build_targets.py --ts-day/--ts-night. Left empty where less than half the patch has data.
 """
@@ -24,7 +28,7 @@ import numpy as np
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-from build_site_terrain import MOON_R, PLAUSIBLE
+from build_site_terrain import MOON_R, MARS_R, PLAUSIBLE, GDAL_ENV, src_path
 
 PATCH_KM, PIX_M = 111.2, 1853.0   # must match build_targets.py
 N = int(round(PATCH_KM * 1000 / PIX_M))  # 60
@@ -33,6 +37,11 @@ NY, NX = int(180 / CELL), int(360 / CELL)
 TS_SRC = ("LRO Diviner Level 4 Global Cumulative Product, bolometric temperature, 10:15-10:45 and 22:15-22:45 local time "
           "(https://pds-geosciences.wustl.edu/lro/lro-l-dlre-4-rdr-v1/lrodlr_1001/data/gcp/)")
 FEATS = [("slope_p90", "deg"), ("slope_median", "deg"), ("relief", "m"), ("hypso", "")]
+BODY = {  # radius (m) and the targets.json sites used for the check (lat, lon as in build_targets.py)
+    "moon": dict(R=MOON_R, name="Moon", check={"tranquility": (0.67, 23.47), "shackleton": (-89.9, 0.0)}),
+    "mars": dict(R=MARS_R, name="Mars", check={"jezero": (18.4, 77.5), "olympus": (18.6, -133.8), "valles": (-14.0, -59.0)}),
+}
+R_BODY = MOON_R  # set in main() from --body
 
 
 def open_global(path, want_px_m):
@@ -40,10 +49,11 @@ def open_global(path, want_px_m):
     import rasterio
     from rasterio.enums import Resampling
     from rasterio.warp import transform
-    with rasterio.open(path) as ds:
+    remote = path.startswith(("http://", "https://"))
+    with rasterio.Env(**GDAL_ENV), rasterio.open(src_path(path)) as ds:
         if ds.crs is None:
             sys.exit(f"{os.path.basename(path)} has no map projection.")
-        ll = f"+proj=longlat +R={MOON_R} +no_defs"
+        ll = f"+proj=longlat +R={R_BODY} +no_defs"
         b, px = ds.bounds, ds.transform.a
         xm, ym = (b.left + b.right) / 2, (b.bottom + b.top) / 2
         # centres of the first two columns: the file edges of a global map are the same meridian, so measure inwards
@@ -54,8 +64,11 @@ def open_global(path, want_px_m):
         if abs((lon_e - lon_w) - 360) > 1 or abs((lat_n - lat_s) - 180) > 1:
             sys.exit(f"{os.path.basename(path)} covers {lon_e - lon_w:.1f} x {lat_n - lat_s:.1f} degrees; a global "
                      "(360 x 180) simple cylindrical file is needed.")
-        native = 2 * math.pi * MOON_R / ds.width
+        native = 2 * math.pi * R_BODY / ds.width
         f = max(1, int(round(want_px_m / native)))
+        if remote and f > 1 and not any(o <= f for o in ds.overviews(1)):
+            sys.exit(f"  {path} has no overviews, so reading it would download the whole file "
+                     f"({ds.width} x {ds.height} px). Download a smaller global file instead (README).")
         h, w = ds.height // f, ds.width // f
         print(f"  elevation file: {ds.width} x {ds.height} px ({native:.0f} m at the equator)"
               + (f", averaged {f}x{f} while reading to {w} x {h}" if f > 1 else ""))
@@ -64,8 +77,8 @@ def open_global(path, want_px_m):
     a[np.abs(a) > 1e7] = np.nan
     med = np.nanmedian(a)
     if med > 1e6:  # radii, not heights
-        a -= MOON_R
-        print(f"  values are radii (median {med:.0f} m): converted to heights above {MOON_R:.0f} m")
+        a -= R_BODY
+        print(f"  values are radii (median {med:.0f} m): converted to heights above {R_BODY:.0f} m")
     dlon, dlat = 360.0 / w, 180.0 / h
     return a, lon_w + dlon / 2, dlon, lat_n - dlat / 2, dlat
 
@@ -75,7 +88,7 @@ def patch_offsets(lat0):
     k = (np.arange(N) - (N - 1) / 2) * PIX_M
     x, y = np.meshgrid(k, -k)  # row 0 = north edge, like the Earth grid
     rho = np.hypot(x, y)
-    c = rho / MOON_R
+    c = rho / R_BODY
     p0 = math.radians(lat0)
     with np.errstate(invalid="ignore", divide="ignore"):
         lat = np.arcsin(np.cos(c) * math.sin(p0) + np.where(rho > 0, y * np.sin(c) * math.cos(p0) / rho, 0))
@@ -112,8 +125,10 @@ def terrain(z):
 
 
 def main():
+    global R_BODY
     ap = argparse.ArgumentParser()
-    ap.add_argument("--dem", required=True, help="global simple-cylindrical lunar elevation file (local)")
+    ap.add_argument("--body", choices=sorted(BODY), default="moon")
+    ap.add_argument("--dem", required=True, help="global simple-cylindrical elevation file (local path, or COG URL)")
     ap.add_argument("--dem-src", required=True, help='dataset name and page, e.g. "LRO LOLA gridded DEM, 16 px/deg (https://...)"')
     ap.add_argument("--ts-day", help="Moon surface temperature map at about 10:30 local time (prep_diviner.py output, K)")
     ap.add_argument("--ts-night", help="same at about 22:30 local time")
@@ -122,10 +137,14 @@ def main():
     a = ap.parse_args()
     if bool(a.ts_day) != bool(a.ts_night):
         sys.exit("--ts-day and --ts-night go together")
-    print(f"== Moon grid: {NY} x {NX} points, {PATCH_KM} km patch of {N} x {N} points at {PIX_M:.0f} m around each")
+    if a.ts_day and a.body != "moon":
+        sys.exit("--ts-day/--ts-night are Diviner (Moon) maps; there is no global Mars temperature map yet")
+    B = BODY[a.body]
+    R_BODY = B["R"]
+    print(f"== {B['name']} grid: {NY} x {NX} points, {PATCH_KM} km patch of {N} x {N} points at {PIX_M:.0f} m around each")
     G = open_global(a.dem, PIX_M)
     lo, hi = np.nanmin(G[0]), np.nanmax(G[0])
-    pl = PLAUSIBLE["moon"]
+    pl = PLAUSIBLE[a.body]
     if lo < pl[0] or hi > pl[1]:
         sys.exit(f"  heights {lo:.0f} to {hi:.0f} m are outside {pl} m: units or scale factor are wrong.")
     print(f"  heights {lo:.0f} to {hi:.0f} m")
@@ -153,18 +172,19 @@ def main():
             out["ts_range"][i] = np.where(enough, dmean - nmean, np.nan)
         if i % 20 == 0:
             print(f"  row {i + 1} of {NY} (latitude {lat0:+.1f})")
-    # check against targets.json: Tranquility measured the same way at its exact centre
+    # check against targets.json: each named target of this body measured the same way at its exact centre
     try:
         with open(os.path.join(a.out, "targets.json"), encoding="utf-8") as f:
-            T = json.load(f)["targets"].get("tranquility", {})
-        dla, dlo = patch_offsets(0.67)
-        v = terrain(sample(G, dla, 23.47 + dlo))
-        print("\n  check at Tranquility (this file vs targets.json, which used the 118 m model):")
-        for (k, u), x in zip(FEATS, v):
-            if k in T:
-                print(f"    {k}: {float(x):.3f} vs {T[k]['value']} {u}")
+            TT = json.load(f)["targets"]
+        print("\n  check at the named targets (this file vs targets.json, which used a finer model averaged to 1853 m):")
+        for sid, (la, lo_) in B["check"].items():
+            T = TT.get(sid, {})
+            dla, dlo = patch_offsets(la)
+            v = terrain(sample(G, dla, lo_ + dlo))
+            print(f"   {sid}: " + ", ".join(f"{k} {float(x):.3f} vs {T[k]['value']}{(' ' + u) if u else ''}"
+                                          for (k, u), x in zip(FEATS, v) if k in T))
     except (OSError, KeyError, ValueError) as e:
-        print(f"  (no Tranquility check: {e})")
+        print(f"  (no check against targets.json: {e})")
     today = datetime.date.today().isoformat()
     terr_src = (f"Measured by pipeline/build_body_grid.py from {a.dem_src}: {PATCH_KM} km patch of {N} x {N} points "
                 f"{PIX_M:.0f} m apart centred on each 1-degree point, sampled bilinearly. Accessed {today}.")
@@ -175,17 +195,17 @@ def main():
         feats += [dict(key="ts_mean", unit="degC", source=ts_src), dict(key="ts_range", unit="degC", source=ts_src)]
     os.makedirs(a.out, exist_ok=True)
     for f in feats:
-        out[f["key"]].astype("<f4").tofile(os.path.join(a.out, f"moon_{f['key']}.bin"))
+        out[f["key"]].astype("<f4").tofile(os.path.join(a.out, f"{a.body}_{f['key']}.bin"))
         v = out[f["key"]]
-        print(f"  moon_{f['key']}.bin: {np.isfinite(v).mean():.0%} of points have a value")
-    man = {"schema": "earth-analogs-bodygrid/v0", "body": "moon", "demo": False, "cell_deg": CELL, "ny": NY, "nx": NX,
+        print(f"  {a.body}_{f['key']}.bin: {np.isfinite(v).mean():.0%} of points have a value")
+    man = {"schema": "earth-analogs-bodygrid/v0", "body": a.body, "demo": False, "cell_deg": CELL, "ny": NY, "nx": NX,
            "patch_km": PATCH_KM, "pixel_m": PIX_M,
            "layout": "row-major float32 LE, row 0 = 90N, col 0 = 180W, NaN = no data; each value describes the patch "
                      "centred on the cell centre",
            "note": "Generated by pipeline/build_body_grid.py. Do not edit by hand.", "features": feats}
-    with open(os.path.join(a.out, "moon_grid.json"), "w", encoding="utf-8") as f:
+    with open(os.path.join(a.out, f"{a.body}_grid.json"), "w", encoding="utf-8") as f:
         json.dump(man, f, indent=1, ensure_ascii=False)
-    print(f"\nwrote {os.path.join(a.out, 'moon_grid.json')} and {len(feats)} .bin files")
+    print(f"\nwrote {os.path.join(a.out, a.body + '_grid.json')} and {len(feats)} .bin files")
 
 
 if __name__ == "__main__":

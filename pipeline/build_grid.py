@@ -2,6 +2,7 @@
 
   python pipeline/build_grid.py                      # raw files in pipeline/raw, output to docs/data
   python pipeline/build_grid.py --check 27.99,86.93  # also print every feature at a place you know
+  python pipeline/build_grid.py --derive-only        # only add derived features (ts_day) to the existing grid
 
 Files missing from the raw folder are skipped, so add datasets one at a time.
 Edit FEATURES below as datasets arrive. The `scale` values are STARTING GUESSES (the gap that counts as
@@ -50,6 +51,45 @@ FEATURES = [
          unit="degC", dimension="air", scale=60, source="WorldClim 2.1 (1970-2000), BIO7 temperature annual range", url="https://www.worldclim.org/data/worldclim21.html",
          resolution="10 arc-minute (about 18 km)", date="", open=dict(valid=(0, 120))),
 ]
+# Derived features: computed from features above, no new download. ts_day = ts_mean + ts_range / 2 is exactly the mean
+# DAYTIME (about 10:30 local) surface temperature, because prep_lst.py makes ts_mean = mean((day + night) / 2) and
+# ts_range = mean(day - night) over the same months and pixels. It has its own dimension so it is only used for targets
+# that have a daytime value and nothing else (Mars, from MGS TES), and it does not change Moon scores.
+DERIVED = [
+    dict(key="ts_day", needs=("ts_mean", "ts_range"), calc=lambda f: f["ts_mean"] + f["ts_range"] / 2,
+         label="Daytime surface temperature (about 10:30 local time on Earth)", unit="degC", dimension="day thermal", scale=120,
+         source="Derived from NASA MODIS Terra MOD11C3 v6.1 land surface temperature, 12 months of 2025: daytime mean = "
+                "ts_mean + ts_range / 2 (pipeline/build_grid.py)",
+         url="https://doi.org/10.5067/MODIS/MOD11C3.061", resolution="0.05 degree (about 5.6 km)", date=""),
+]
+
+
+def derive(feats, meta):
+    for d in DERIVED:
+        if all(k in feats for k in d["needs"]):
+            feats[d["key"]] = d["calc"](feats).astype("float32")
+            meta[d["key"]] = {k: d[k] for k in ("label", "unit", "dimension", "scale", "source", "url", "resolution", "date")}
+            a = feats[d["key"]]
+            print(f"ok     {d['key']} (derived): {int(np.isfinite(a).sum())} cells with data, range {np.nanmin(a):.2f} to {np.nanmax(a):.2f} {d['unit']}")
+
+
+def derive_only(out):
+    """Add the derived features to an existing grid (docs/data) without the raw files."""
+    import json
+    with open(os.path.join(out, "grid.json"), encoding="utf-8") as f:
+        man = json.load(f)
+    feats, meta = {}, {}
+    for f in man["features"]:
+        if f["key"] in {d["key"] for d in DERIVED}:
+            continue
+        feats[f["key"]] = np.fromfile(os.path.join(out, f["key"] + ".bin"), "<f4").reshape(man["ny"], man["nx"])
+        meta[f["key"]] = {k: f.get(k, "") for k in ("label", "unit", "dimension", "scale", "source", "url", "resolution", "date")}
+    derive(feats, meta)
+    extra = {k: v for k, v in man.items() if k not in ("schema", "cell_deg", "ny", "nx", "layout", "features")}
+    fp.export(feats, meta, man["cell_deg"], out, extra or None)
+    print(f"wrote {len(feats)} features to {out}")
+
+
 REDUCE = {"p90": fp.p90, "median": fp.median, "mean": fp.mean, "relief": fp.relief, "hypso": fp.hypso}
 
 
@@ -72,6 +112,7 @@ def build(raw, out, cell, check=None):
         print(f"ok     {f['key']}: {int(np.isfinite(a).sum())} cells with data, range {np.nanmin(a):.2f} to {np.nanmax(a):.2f} {f['unit']}")
     if not feats:
         raise SystemExit(f"No input files found in {raw}. Put your downloaded rasters there (see FEATURES for the names).")
+    derive(feats, meta)
     fp.export(feats, meta, cell, out)
     print(f"wrote {len(feats)} features to {out}")
     if check:
@@ -88,5 +129,9 @@ if __name__ == "__main__":
     ap.add_argument("--out", default=os.path.join(HERE, "..", "docs", "data"))
     ap.add_argument("--cell", type=float, default=1.0)
     ap.add_argument("--check", help="lat,lon of a place you know, to sanity-check values")
+    ap.add_argument("--derive-only", action="store_true", help="only add derived features (ts_day) to the existing docs/data grid")
     a = ap.parse_args()
+    if a.derive_only:
+        derive_only(a.out)
+        sys.exit()
     build(a.raw, a.out, a.cell, tuple(float(x) for x in a.check.split(",")) if a.check else None)

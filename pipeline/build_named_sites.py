@@ -24,9 +24,9 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 from finder_pipeline import cell_of
 
-GROUP = {"terrain": "Terrain", "landform": "Landform", "thermal": "Climate", "air": "Air (Earth only)"}  # "Climate" keeps the app's Climate preset working
+GROUP = {"terrain": "Terrain", "landform": "Landform", "thermal": "Climate", "day thermal": "Climate", "air": "Air (Earth only)"}  # "Climate" keeps the app's Climate preset working
 SHORT = {"slope_p90": "Steep slope (90th pct)", "slope_median": "Median slope", "relief": "Local relief",
-         "hypso": "Landform shape", "ts_mean": "Mean surface temperature", "ts_range": "Day-night surface swing",
+         "hypso": "Landform shape", "ts_mean": "Mean surface temperature", "ts_range": "Day-night surface swing", "ts_day": "Daytime surface temperature",
          "t_mean": "Mean air temperature", "t_range": "Air temperature range"}
 UNIT = {"deg": "°", "degC": "°C"}
 

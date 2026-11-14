@@ -2,6 +2,8 @@
 
   Summary of one file (writes nothing):
     python pipeline/prep_tes.py --site jezero --day pipeline/raw/tes/jezero_day.van.gz
+  Daytime only (writes ts_day for that site into docs/data/targets.json):
+    python pipeline/prep_tes.py --site jezero --day pipeline/raw/tes/jezero_day.van.gz --day-only
   Day and night together (writes ts_mean and ts_range for that site into docs/data/targets.json):
     python pipeline/prep_tes.py --site jezero --day pipeline/raw/tes/jezero_day.van.gz --night pipeline/raw/tes/jezero_night.van.gz
 
@@ -23,7 +25,7 @@ Raw exports stay in pipeline/raw/tes/ (never committed; their file names contain
 import argparse, datetime, gzip, json, math, os, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-MARS_R = 3389500.0
+MARS_R = 3396190.0  # same as build_site_terrain.py
 PATCH_KM = 111.2  # must match build_targets.py
 SITES = {  # centres must match build_targets.py
     "jezero": (18.4, 77.5),
@@ -101,38 +103,52 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--site", required=True, choices=sorted(SITES))
     ap.add_argument("--day", required=True, help="TES Data Tool export for Time of Day = Day")
-    ap.add_argument("--night", help="TES Data Tool export for Time of Day = Night; without it nothing is written")
+    ap.add_argument("--night", help="TES Data Tool export for Time of Day = Night (writes ts_mean and ts_range)")
+    ap.add_argument("--day-only", action="store_true", help="no night file: write the daytime mean as ts_day")
     ap.add_argument("--url", help="page of the TES Data Tool you used, added to the source text")
     ap.add_argument("--out", default=os.path.join(HERE, "..", "docs", "data", "targets.json"))
     a = ap.parse_args()
     print(f"== {a.site}: TES surface temperature over a {PATCH_KM} km patch")
     d = summarise(a.day, a.site, "day")
+    lat0, lon0 = SITES[a.site]
+    src = SRC[:-1] + f", {a.url})" if a.url else SRC
+    where = f"{abs(lat0)}°{'N' if lat0 >= 0 else 'S'}, {abs(lon0)}°{'E' if lon0 >= 0 else 'W'}"
+    pw = lambda x: f"{x['n']} spots, {x['passes']} passes averaged first" if x["passes"] else f"{x['n']} spots, weighted equally"
     if not a.night:
-        print("\nno --night file: summary only, targets.json not changed (ts_mean and ts_range need both).")
+        if not a.day_only:
+            print("\nno --night file: summary only, targets.json not changed. Add --day-only to write ts_day.")
+            return
+        text = (f"Measured by pipeline/prep_tes.py from {src}: daytime mean over a {PATCH_KM} km patch centred {where}, "
+                f"{d['lt'][0]}-{d['lt'][1]} local time ({pw(d)}). Compared with Earth's daytime value at about 10:30 local "
+                f"time (MODIS Terra), so Mars is measured about 3.5 hours later in its day."
+                + (f" No clear-sky passes at Ls {', '.join(d['gaps'])} (dusty season)." if d["gaps"] else "")
+                + f" Accessed {datetime.date.today().isoformat()}.")
+        write(a.out, a.site, {"ts_day": {"value": round(d["t"], 1), "source": text}})
         return
     n = summarise(a.night, a.site, "night")
     if d["t"] < n["t"]:
         sys.exit("day is colder than night: check that --day and --night are not swapped. Nothing written.")
-    lat0, lon0 = SITES[a.site]
     gaps = sorted(set(d["gaps"] or []) | set(n["gaps"] or []))
     pw = lambda x: f"{x['n']} spots, {x['passes']} passes" if x["passes"] else f"{x['n']} spots, weighted equally"
-    src = SRC[:-1] + f", {a.url})" if a.url else SRC
     text = (f"Measured by pipeline/prep_tes.py from {src}: mean over a {PATCH_KM} km patch centred "
             f"{abs(lat0)}°{'N' if lat0 >= 0 else 'S'}, {abs(lon0)}°{'E' if lon0 >= 0 else 'W'}. "
             f"Day {d['lt'][0]}-{d['lt'][1]} local time ({pw(d)}), night {n['lt'][0]}-{n['lt'][1]} ({pw(n)}). mean = (day + night) / 2, swing = day - night. NOT the same local hours as "
             f"Earth and Moon (10:30 and 22:30), so the swing is not like for like."
             + (f" No clear-sky passes at Ls {', '.join(gaps)} (dusty season)." if gaps else "")
             + f" Accessed {datetime.date.today().isoformat()}.")
-    with open(a.out, encoding="utf-8") as f:
+    write(a.out, a.site, {"ts_mean": {"value": round((d["t"] + n["t"]) / 2, 1), "source": text},
+                          "ts_range": {"value": round(d["t"] - n["t"], 1), "source": text}})
+
+
+def write(out, site, vals):
+    with open(out, encoding="utf-8") as f:
         doc = json.load(f)
     if doc.get("demo"):
         sys.exit("targets.json is marked demo; run build_targets.py for real terrain first. Nothing written.")
-    t = doc.setdefault("targets", {}).setdefault(a.site, {})
-    t["ts_mean"] = {"value": round((d["t"] + n["t"]) / 2, 1), "source": text}
-    t["ts_range"] = {"value": round(d["t"] - n["t"], 1), "source": text}
-    with open(a.out, "w", encoding="utf-8") as f:
+    doc.setdefault("targets", {}).setdefault(site, {}).update(vals)
+    with open(out, "w", encoding="utf-8") as f:
         json.dump(doc, f, indent=1, ensure_ascii=False)
-    print(f"\nwrote {a.out}: {a.site} ts_mean {t['ts_mean']['value']} degC, ts_range {t['ts_range']['value']} degC")
+    print(f"\nwrote {out}: {site} " + ", ".join(f"{k} {v['value']} degC" for k, v in vals.items()))
 
 
 if __name__ == "__main__":

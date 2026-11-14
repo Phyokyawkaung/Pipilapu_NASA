@@ -745,10 +745,14 @@ async function efLoad(){
 function efScore(){
   const g=EF.grid,T=EF.targets.targets[EF.tid]||{},n=g.ny*g.nx,use=g.features.filter(f=>EF.on[f.dimension]&&T[f.key]),per={};
   use.forEach(f=>per[f.dimension]=(per[f.dimension]||0)+1);
-  const num=new Float32Array(n),den=new Float32Array(n),sc=new Float32Array(n).fill(NaN);
-  for(const f of use){const a=EF.feats[f.key],t=T[f.key].value,s=f.scale||1,w=1/per[f.dimension];
-    for(let i=0;i<n;i++){const v=a[i];if(v===v){num[i]+=w*(1-Math.min(1,Math.abs(v-t)/s));den[i]+=w}}}
-  for(let i=0;i<n;i++)if(den[i]>0)sc[i]=num[i]/den[i];
+  /* A cell is scored only if it has a value in EVERY dimension that is turned on. Otherwise a coastal or sea-ice cell with
+     only a temperature value could reach 100% on temperature alone. */
+  const dims=Object.keys(per),num=new Float32Array(n),den=new Float32Array(n),hit=new Uint8Array(n),sc=new Float32Array(n).fill(NaN);
+  dims.forEach((d,k)=>{const fs=use.filter(f=>f.dimension===d),seen=new Uint8Array(n);
+    for(const f of fs){const a=EF.feats[f.key],t=T[f.key].value,s=f.scale||1,w=1/per[d];
+      for(let i=0;i<n;i++){const v=a[i];if(v===v){num[i]+=w*(1-Math.min(1,Math.abs(v-t)/s));den[i]+=w;seen[i]=1}}}
+    for(let i=0;i<n;i++)hit[i]+=seen[i]});
+  for(let i=0;i<n;i++)if(den[i]>0&&hit[i]===dims.length)sc[i]=num[i]/den[i];
   EF.score=sc}
 const efKm=(a,b,c,d)=>{const r=Math.PI/180,x=Math.sin((c-a)*r/2)**2+Math.cos(a*r)*Math.cos(c*r)*Math.sin((d-b)*r/2)**2;return 12742*Math.asin(Math.sqrt(x))};
 const efCell=i=>{const g=EF.grid;return[90-(Math.floor(i/g.nx)+.5)*g.cell_deg,-180+(i%g.nx+.5)*g.cell_deg]};
@@ -807,11 +811,17 @@ function efDraw(){
   <div class="note2">Each dimension counts equally; features inside one share its weight. Cells are ${g.cell_deg}° boxes, so small features are averaged away. Earth cannot reproduce gravity, vacuum or radiation, so a high score here is a lead to check, not a verdict.</div>
   <div class="btns"><button class="pri" onclick="efBack()">Back to ${esc(S[EF.tid].name)}</button></div>`}
 
-/* ---------- Pick any point (Moon) ----------
-   Click the focused Moon anywhere. Values come from docs/data/moon_grid.json + moon_<feature>.bin (pipeline/build_body_grid.py):
+/* ---------- Pick any point (Moon, Mars) ----------
+   Click the focused Moon or Mars anywhere. Values come from docs/data/<body>_grid.json + <body>_<feature>.bin (pipeline/build_body_grid.py --body <body>):
    the same features as targets.json, measured on the 111 km patch around every 1-degree point. Find on Earth then runs on
    them exactly as for a named target (target id 'pick'). Nothing is estimated here: a missing value is shown as missing. */
-var PK={grids:{},body:null,lat:null,lon:null,T:null,pin:null},PK_BODIES=['moon'];
+var PK={grids:{},body:null,lat:null,lon:null,T:null,pin:null},PK_BODIES=['moon','mars'];
+/* Which Earth-grid features each body is compared on, and why a missing one is missing. Text only, no numbers. */
+const PK_INFO={
+  moon:{keys:['slope_p90','slope_median','relief','hypso','ts_mean','ts_range'],
+    note:'Moon surface temperature exists only where Diviner data were downloaded (about 10°S to 10°N and 80°S to 90°S)'},
+  mars:{keys:['slope_p90','slope_median','relief','hypso','ts_day'],
+    note:'Mars daytime surface temperature is measured only for Jezero Crater, Olympus Mons and Valles Marineris (MGS TES). There is no global Mars temperature grid yet, so a picked point is compared on terrain and landform'}};
 async function pkLoad(body){
   if(PK.grids[body])return PK.grids[body];
   const get=async u=>{const r=await fetch(u,{cache:'no-cache'});if(!r.ok)throw new Error(u+' returned HTTP '+r.status);return r};
@@ -825,18 +835,19 @@ async function pkShow(){
   const body=PK.body,bn=esc(DATA.bodies[body]?DATA.bodies[body].name:body),here=()=>$('pkb');
   openPanel(`<div class="kick">${bn} · picked point</div><h2>${efLL(PK.lat,PK.lon)}</h2><div id="pkb"><div class="note2">Reading the ${bn} grid…</div></div>`);
   let G;try{G=await pkLoad(body);await efLoad()}catch(e){if(here())here().innerHTML=`<div class="mp">The ${bn} grid is not built yet, so there are no values for this point.</div>
-    <div class="mp">Make it once with <b>python pipeline/build_body_grid.py</b> (README), then reload.</div><div class="note2">Details: ${esc(e.message)}</div>
+    <div class="mp">Make it once with <b>python pipeline/build_body_grid.py --body ${body}</b> (README), then reload.</div><div class="note2">Details: ${esc(e.message)}</div>
     <div class="btns"><button onclick="focusBody('${body}')">Back to ${bn}</button></div>`;return}
   if(!here())return;
   const m=G.m,i=Math.min(m.ny-1,Math.max(0,Math.floor((90-PK.lat)/m.cell_deg))),j=((Math.floor((PK.lon+180)/m.cell_deg)%m.nx)+m.nx)%m.nx,k=i*m.nx+j,
     cla=90-(i+.5)*m.cell_deg,clo=-180+(j+.5)*m.cell_deg,T={};
   m.features.forEach(f=>{const v=G.v[f.key][k];if(v===v)T[f.key]={value:v,source:f.source}});PK.T=T;PK.demo=!!m.demo;
-  const feats=EF.grid.features.filter(f=>f.dimension!=='air'),n=feats.filter(f=>T[f.key]).length,demo=m.demo||EF.grid.demo;
+  const info=PK_INFO[body]||{keys:m.features.map(f=>f.key),note:''},
+    feats=EF.grid.features.filter(f=>info.keys.includes(f.key)),n=feats.filter(f=>T[f.key]).length,demo=m.demo||EF.grid.demo;
   here().innerHTML=`${demo?'<div class="mock">DEMO data: the grids are made up to test the app.</div>':'<div class="realline">Real data, sources below</div>'}
   <div class="sub" style="margin-top:6px">Values for the ${m.patch_km} km patch around the grid point nearest your click (${efLL(cla,clo)}), measured the same way as the named sites.</div>
   <div class="grp">This point</div>
   ${feats.map(f=>`<div class="mr one"><div class="ml">${esc(f.label)}<small>${esc(f.dimension)}</small></div><div class="mv">${T[f.key]?fmt(T[f.key].value)+' '+esc(f.unit):'<span class="na">No sourced value</span>'}</div></div>`).join('')}
-  ${n<feats.length?`<div class="note2">${feats.length-n} feature${feats.length-n>1?'s have':' has'} no sourced value here${feats.some(f=>f.dimension==='thermal'&&!T[f.key])?'. Moon surface temperature exists only where Diviner data were downloaded (about 10°S to 10°N and 80°S to 90°S)':''}. Find on Earth compares on the rest.</div>`:''}
+  ${n<feats.length?`<div class="note2">${feats.length-n} feature${feats.length-n>1?'s have':' has'} no sourced value here${info.note&&feats.some(f=>/thermal/.test(f.dimension)&&!T[f.key])?'. '+esc(info.note):''}. Find on Earth compares on the rest.</div>`:''}
   <div class="btns">${n?`<button class="pri" onclick="pkFind()">Find similar places on Earth</button>`:''}<button onclick="focusBody('${body}')">Back to ${bn}</button></div>
   <details class="wts"><summary>Sources</summary><div style="padding-bottom:8px">${[...new Set(Object.values(T).map(x=>x.source))].map(x=>`<div class="note2" style="margin:2px 0">${esc(x)}</div>`).join('')}</div></details>
   <div class="note2">Click another point to compare it instead.</div>`}

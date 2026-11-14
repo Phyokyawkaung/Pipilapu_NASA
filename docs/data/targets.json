@@ -73,6 +73,10 @@
    "hypso": {
     "value": 0.502,
     "source": "Measured by pipeline/build_targets.py from USGS Mars MOLA-HRSC Blended DEM 200 m v2 (Fergason et al. 2018) (https://astrogeology.usgs.gov/search/map/mars_mgs_mola_mex_hrsc_blended_dem_global_200m): 111.2 km patch centred 18.4°N, 77.5°E, averaged to 1853 m pixels to match the Earth grid (ETOPO 2022, 60 arc-seconds). Accessed 2026-11-11."
+   },
+   "ts_day": {
+    "value": 2.3,
+    "source": "Measured by pipeline/prep_tes.py from MGS TES Standard Data Products, TARGET_TEMPERATURE of surface observations with Clear Atmosphere and Highest Spectral Quality, queried with the TES Data Tool (ASU TES Data Node; archive: PDS Geosciences Node): daytime mean over a 111.2 km patch centred 18.4°N, 77.5°E, 13:20-14:46 local time (2427 spots, 51 passes averaged first). Compared with Earth's daytime value at about 10:30 local time (MODIS Terra), so Mars is measured about 3.5 hours later in its day. No clear-sky passes at Ls 210-240, 240-270 (dusty season). Accessed 2026-11-14."
    }
   },
   "olympus": {
@@ -91,6 +95,10 @@
    "hypso": {
     "value": 0.523,
     "source": "Measured by pipeline/build_targets.py from USGS Mars MOLA-HRSC Blended DEM 200 m v2 (Fergason et al. 2018) (https://astrogeology.usgs.gov/search/map/mars_mgs_mola_mex_hrsc_blended_dem_global_200m): 111.2 km patch centred 18.6°N, 133.8°W, averaged to 1853 m pixels to match the Earth grid (ETOPO 2022, 60 arc-seconds). Accessed 2026-11-11."
+   },
+   "ts_day": {
+    "value": -0.8,
+    "source": "Measured by pipeline/prep_tes.py from MGS TES Standard Data Products, TARGET_TEMPERATURE of surface observations with Clear Atmosphere and Highest Spectral Quality, queried with the TES Data Tool (ASU TES Data Node; archive: PDS Geosciences Node): daytime mean over a 111.2 km patch centred 18.6°N, 133.8°W, 13:22-14:39 local time (677 spots, weighted equally). Compared with Earth's daytime value at about 10:30 local time (MODIS Terra), so Mars is measured about 3.5 hours later in its day. Accessed 2026-11-14."
    }
   },
   "valles": {
@@ -109,6 +117,10 @@
    "hypso": {
     "value": 0.447,
     "source": "Measured by pipeline/build_targets.py from USGS Mars MOLA-HRSC Blended DEM 200 m v2 (Fergason et al. 2018) (https://astrogeology.usgs.gov/search/map/mars_mgs_mola_mex_hrsc_blended_dem_global_200m): 111.2 km patch centred 14.0°S, 59.0°W, averaged to 1853 m pixels to match the Earth grid (ETOPO 2022, 60 arc-seconds). Accessed 2026-11-11."
+   },
+   "ts_day": {
+    "value": 1.9,
+    "source": "Measured by pipeline/prep_tes.py from MGS TES Standard Data Products, TARGET_TEMPERATURE of surface observations with Clear Atmosphere and Highest Spectral Quality, queried with the TES Data Tool (ASU TES Data Node; archive: PDS Geosciences Node): daytime mean over a 111.2 km patch centred 14.0°S, 59.0°W, 13:21-14:54 local time (1542 spots, weighted equally). Compared with Earth's daytime value at about 10:30 local time (MODIS Terra), so Mars is measured about 3.5 hours later in its day. Accessed 2026-11-14."
    }
   }
  }

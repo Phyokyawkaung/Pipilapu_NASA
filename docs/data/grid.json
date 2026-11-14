@@ -92,6 +92,17 @@
    "url": "https://www.worldclim.org/data/worldclim21.html",
    "resolution": "10 arc-minute (about 18 km)",
    "date": ""
+  },
+  {
+   "key": "ts_day",
+   "label": "Daytime surface temperature (about 10:30 local time on Earth)",
+   "unit": "degC",
+   "dimension": "day thermal",
+   "scale": 120,
+   "source": "Derived from NASA MODIS Terra MOD11C3 v6.1 land surface temperature, 12 months of 2025: daytime mean = ts_mean + ts_range / 2 (pipeline/build_grid.py)",
+   "url": "https://doi.org/10.5067/MODIS/MOD11C3.061",
+   "resolution": "0.05 degree (about 5.6 km)",
+   "date": ""
   }
  ]
 }
