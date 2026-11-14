@@ -110,19 +110,9 @@ h2{margin:2px 0 2px;font-size:24px;font-weight:600}
 .note2{font-size:11px;color:var(--mute);margin:10px 0 12px;line-height:1.5}
 @media(max-width:859px){.wg{grid-template-columns:1fr}}
 .alsol{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--mute);margin:12px 0 0}
-.chip.auto{border-style:dashed}.chip.alt{opacity:.8}.chip small.uf,.hm small.uf{display:block;font:500 9.5px/1.2 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--mute)}.chip small.uf{display:inline;margin-left:-4px}.hm .alt{opacity:.5}
+.chip.auto{border-style:dashed}.chip.alt{opacity:.8}.chip small.uf{display:block;font:500 9.5px/1.2 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--mute)}.chip small.uf{display:inline;margin-left:-4px}
 .top{color:var(--gold);font-style:normal;font-size:11px;margin-left:6px}
 .need.scn.on{border-color:var(--gold);color:var(--gold);background:rgba(255,200,87,.1)}
-.hmw{overflow-x:auto;margin-top:12px}
-.hm{border-collapse:separate;border-spacing:4px;min-width:100%}
-.hm th{font-weight:500;color:var(--mute);text-align:left;font-size:11px;vertical-align:bottom;padding:2px 4px}
-.hm thead th{text-align:center;min-width:62px;max-width:90px}
-.hm tbody th{color:var(--text);font-size:12px;min-width:110px}
-.hm th small{display:block;color:var(--mute);font-size:10px;text-transform:uppercase;letter-spacing:.08em}
-.hc{position:relative;width:100%;min-width:54px;height:40px;border:0;border-radius:8px;font-size:13px;font-weight:600;color:#fff}
-.hc.b{box-shadow:inset 0 0 0 2px var(--acc)}
-.hc i{position:absolute;top:5px;right:5px;width:6px;height:6px;border-radius:50%;background:#fff;opacity:.85}
-.hc:hover{filter:brightness(1.3)}
 .mockline{margin:8px 0 0;font-size:11px;color:var(--gold);letter-spacing:.04em}
 /* loading screen */
 #load{position:fixed;inset:0;z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;background:radial-gradient(ellipse at 50% 40%,#0b1226,#05070d 70%);transition:opacity .6s ease,visibility .6s}
@@ -261,16 +251,12 @@ h2{font-size:22px;font-weight:600;letter-spacing:-.01em;margin:4px 0 2px}
 a.lnk{color:var(--text)}
 .efr.on{background:var(--sel)}
 /* numbers and tables */
-.mv,.ms,.donut span,.hc,.efs,.fr .rh span,.card b{font-variant-numeric:tabular-nums}
-.mh,.hm th,.hm thead th{font:500 10.5px/1.3 var(--mono);letter-spacing:.06em;text-transform:uppercase}
-.hm tbody th{font:inherit;font-size:12px;text-transform:none;letter-spacing:0}
+.mv,.ms,.donut span,.efs,.fr .rh span,.card b{font-variant-numeric:tabular-nums}
+.mh{font:500 10.5px/1.3 var(--mono);letter-spacing:.06em;text-transform:uppercase}
 .bar,.fr .cov{height:4px;border-radius:2px}
 .fr .cov i,.lb i{background:var(--acc)}
 .donut{width:84px;height:84px}.donut::before{inset:5px;background:var(--solid)}
 .donut span{font-size:20px}.donut small{font-family:var(--mono)}
-.hc{border-radius:var(--r-s);height:36px;font-size:12px}
-.hc.b{box-shadow:inset 0 0 0 2px var(--text)}
-.hc:hover{filter:brightness(1.2)}
 /* loading screen */
 #load{background:var(--bg)}
 #load h1{font:600 13px/1 var(--mono);letter-spacing:.16em;text-transform:uppercase;margin-bottom:10px}
@@ -283,7 +269,7 @@ a.lnk{color:var(--text)}
 <div id="load" role="status" aria-live="polite"><div class="lo"><i class="e"></i><b class="o a"><i></i></b><b class="o b"><i></i></b></div><h1>Earth Analogs Explorer</h1><p>Earth sites that stand in for the Moon and Mars</p><div class="lb"><i id="lf"></i></div><p id="lt">Loading 3D engine…</p></div>
 <div id="bar"></div>
 <div id="hint">Drag to rotate · scroll / pinch to zoom · tap a planet to fly to it</div>
-<div id="tools"><input id="q" placeholder="Search sites…" autocomplete="off"><button id="heat">Heatmap</button><button id="tour">Tour</button></div>
+<div id="tools"><input id="q" placeholder="Search sites…" autocomplete="off"><button id="tour">Tour</button></div>
 <div id="res"></div>
 <div id="panel"></div>
 <div id="toast"></div>
@@ -440,8 +426,8 @@ const $=id=>document.getElementById(id),bar=$('bar'),panel=$('panel'),hint=$('hi
 function flyTo(pos,tgt,minD){tween={t0:performance.now(),dur:1500,p0:camera.position.clone(),a:controls.target.clone(),p1:pos,b:tgt,minD};controls.minDistance=Math.min(controls.minDistance,minD)}
 function panelDockOffset(){return innerWidth>=860?Math.min(760,innerWidth*.52)/2+7:0}
 function setMarkers(){markers.forEach(m=>{const v=S[m.userData.key].body===focused;m.visible=m.userData.ring.visible=v;m.userData.ring.scale.setScalar(sel===m.userData.key?1.35:hov===m?1.2:1)})}
-function openPanel(h){HEAT=false;if(!EF.keep)efHide();panel.className='';panel.innerHTML=`<button id="x" onclick="overview()" aria-label="Close">×</button>`+h;panel.style.display='block';panel.scrollTop=0;shiftT=panelDockOffset()}
-function overview(){efHide();tourStop();NS.from=false;focused=sel=null;panel.style.display='none';shiftT=0;hint.style.display='';setMarkers();buildBar();flyTo(OV.pos.clone(),OV.tgt.clone(),2)}
+function openPanel(h){if(!EF.keep)efHide();panel.className='';panel.innerHTML=`<button id="x" onclick="overview()" aria-label="Close">×</button>`+h;panel.style.display='block';panel.scrollTop=0;shiftT=panelDockOffset()}
+function overview(){efHide();tourStop();focused=sel=null;panel.style.display='none';shiftT=0;hint.style.display='';setMarkers();buildBar();flyTo(OV.pos.clone(),OV.tgt.clone(),2)}
 function focusBody(id,key,aid){
   focused=id;sel=key||null;const v=VIS[id],c=v.mesh.position.clone();let dir,dist;
   if(key){const s=S[key];dir=v.mesh.localToWorld(ll(s.lat,s.lon,v.R)).sub(c).normalize();dist=v.R*2.55}
@@ -528,7 +514,7 @@ function showSite(id,aid){
     <div class="src">Sources: ${[...new Set([...Object.values(t.metrics),...Object.values(A.metrics)].map(m=>m.source))].map(k=>(DATA.sources[k]||{}).name||k).join(' · ')}.</div>`),
     placeTab=(tab==='profile'||tab==='data')&&!named;
     openPanel(head(t)+hero+tabsH+(tab==='plan'&&window.BP?BP.html(t):tab==='profile'?profileH:tab==='data'?dataH:matchH)+`
-    <div class="btns">${placeTab?'':`<button class="pri" onclick="focusBody('earth','${A.id}')">Fly to ${A.name}</button><button onclick="focusBody('${t.body}')">Back to ${DATA.bodies[t.body].name}</button>`}${NS.from==='heat'?`<button onclick="showHeat()">← Back to heatmap</button>`:''}</div>`);if(tab==='plan'&&window.BP)BP.mount(t);if(tab==='match'){mBest(id);rankFill(id,cur.a.id)}if(tab==='profile'||tab==='data')cmpFill(id,tab)}
+    <div class="btns">${placeTab?'':`<button class="pri" onclick="focusBody('earth','${A.id}')">Fly to ${A.name}</button><button onclick="focusBody('${t.body}')">Back to ${DATA.bodies[t.body].name}</button>`}</div>`);if(tab==='plan'&&window.BP)BP.mount(t);if(tab==='match'){mBest(id);rankFill(id,cur.a.id)}if(tab==='profile'||tab==='data')cmpFill(id,tab)}
   else{
     const us=DATA.sites.filter(s=>s.type==='target'&&(s.analogs||[]).some(a=>a.id===id)).map(s=>({s,c:compare(s,s.analogs.find(a=>a.id===id))}));
     const rows=DATA.metrics.map(m=>({m,x:val(t,m.key)})).filter(r=>r.x!=null);
@@ -554,27 +540,10 @@ function autoWhy(t,A){const a=val(t,'tags')||[],b=val(A,'tags')||[],sh=a.filter(
 function setW(k,v){WO[k]=+v;refreshW(false)}
 function applyPreset(k){WO={};if(k!=='default')wMetrics().forEach(m=>{WO[m.key]=+PRESETS[k](m).toFixed(2)});refreshW(true)}
 function refreshW(sync){wMetrics().forEach(m=>{const s=$('w-'+m.key),l=$('wv-'+m.key);if(!s)return;if(sync)s.value=wt(m);l.textContent=wt(m)});
-  const c=$('wcustom');if(c)c.textContent=Object.keys(WO).length?'custom':'';updScores();if(HEAT)showHeat(true)}
+  const c=$('wcustom');if(c)c.textContent=Object.keys(WO).length?'custom':'';updScores()}
 function updScores(){if(!CUR||!S[CUR.id])return;const t=S[CUR.id];let top=null;
   document.querySelectorAll('.chip b[data-a]').forEach(b=>{const id=b.dataset.a,sc=compare(t,(t.analogs||[]).find(a=>a.id===id)||{id}).score;b.textContent=pct(sc);if(id===CUR.aid)top=sc});
   const d=document.querySelector('.donut');if(d){d.style.setProperty('--p',Math.round((top||0)*100));d.querySelector('span').textContent=pct(top)}}
-
-/* ---------- Heatmap state ---------- */
-const NS={from:false};
-let HEAT=false;const HM={body:'moon'};
-function goFind(tid,aid,from){NS.from=from||false;focusBody(S[tid].body,tid,aid)}
-const PL={default:'Dataset default',geology:'Geology first',climate:'Climate first',equal:'Equal'};
-$('heat').onclick=()=>showHeat();
-function showHeat(redraw){
-  const st=panel.scrollTop,T=DATA.sites.filter(s=>s.type==='target'&&s.body===HM.body),E=[...DATA.sites.filter(s=>s.type==='analog'&&forBody(s,HM.body)),...DATA.sites.filter(s=>s.type==='analog'&&!forBody(s,HM.body))],
-    rows=T.map(t=>({t,r:E.map(A=>{const c=(t.analogs||[]).find(a=>a.id===A.id);return{A,cur:!!c,s:compare(t,c||{id:A.id}).score||0}})}));
-  openPanel(`<div class="kick">Overview</div><h2>Match heatmap</h2><div class="sub">Every ${DATA.bodies[HM.body].name} target against every Earth site. ${DATA.bodies[HM.body].name} analog sites come first; sites usually studied for another body are dimmed at the end. Click a cell to open that comparison.</div>${mockBanner()}
-  <div style="margin-top:12px"><div class="seg">${[['moon','Moon'],['mars','Mars']].map(([k,l])=>`<button class="${HM.body===k?'on':''}" onclick="HM.body='${k}';showHeat(true)">${l}</button>`).join('')}</div></div>
-  <div class="wp" style="margin-top:12px">${['default','geology','climate','equal'].map(k=>`<button onclick="applyPreset('${k}')">${PL[k]}</button>`).join('')}${Object.keys(WO).length?'<span class="cu">custom weights</span>':''}</div>
-  <div class="hmw"><table class="hm"><thead><tr><th></th>${E.map(A=>{const o=!forBody(A,HM.body);return `<th class="${o?'alt':''}" title="${A.name}${o?' · usually a '+usualFor(A)+' analog':''}">${A.name.split(',')[0]}${o?`<small class="uf">${esc(usualFor(A))}</small>`:''}</th>`}).join('')}</tr></thead><tbody>
-  ${rows.map(row=>{const best=Math.max(...row.r.map(x=>x.s));return `<tr><th>${row.t.name}<small>${DATA.bodies[row.t.body].name}</small></th>${row.r.map(x=>`<td class="${forBody(x.A,HM.body)?'':'alt'}"><button class="hc${x.s===best?' b':''}" style="background:hsl(${x.s*120} 60% ${20+x.s*16}%)" title="${row.t.name} vs ${x.A.name}: ${pct(x.s)}${x.cur?' (curated analog)':''}" onclick="goFind('${row.t.id}','${x.A.id}','heat')">${Math.round(x.s*100)}${x.cur?'<i></i>':''}</button></td>`).join('')}</tr>`}).join('')}</tbody></table></div>
-  <div class="src">Outlined = best in row · dot = curated analog · dimmed = usually studied for another body · scores follow the weights above.</div>`);
-  HEAT=true;if(redraw===true){panel.classList.add('nf');panel.scrollTop=st}}
 
 /* ---------- Coverage & gaps ----------
    Separate from the match score: for each condition, is the Earth site close enough to the target to test it?
