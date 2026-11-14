@@ -264,6 +264,14 @@ a.lnk{color:var(--text)}
 .fr .cov i,.lb i{background:var(--acc)}
 .donut{width:84px;height:84px}.donut::before{inset:5px;background:var(--solid)}
 .donut span{font-size:20px}.donut small{font-family:var(--mono)}
+/* planetary GIS */
+.gis-opt{display:flex;align-items:center;justify-content:space-between;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:9px 12px;font-size:12.5px;cursor:pointer;transition:border-color .15s,background .15s;text-align:left}
+.gis-opt:hover{border-color:var(--acc);background:rgba(94,200,255,.06)}
+.gis-opt.on{border-color:var(--acc);background:rgba(94,200,255,.14);box-shadow:inset 0 0 0 1px var(--acc);color:var(--text)}
+.gis-opt-title{font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gis-opt-unit{font:500 10.5px/1 var(--mono);color:var(--mute);margin-left:6px;flex-shrink:0}
+.gis-opt.on .gis-opt-unit{color:var(--acc)}
+.gis-probe{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;margin:8px 0}
 /* loading screen */
 #load{background:var(--bg)}
 #load h1{font:600 13px/1 var(--mono);letter-spacing:.16em;text-transform:uppercase;margin-bottom:10px}
@@ -433,8 +441,8 @@ const $=id=>document.getElementById(id),bar=$('bar'),panel=$('panel'),hint=$('hi
 function flyTo(pos,tgt,minD){tween={t0:performance.now(),dur:1500,p0:camera.position.clone(),a:controls.target.clone(),p1:pos,b:tgt,minD};controls.minDistance=Math.min(controls.minDistance,minD)}
 function setMarkers(){markers.forEach(m=>{const v=S[m.userData.key].body===focused;m.visible=m.userData.ring.visible=v;m.userData.ring.scale.setScalar(sel===m.userData.key?1.35:hov===m?1.2:1)});if(PK&&PK.pin)PK.pin.visible=PK.body===focused}
 function panelOffset(){return panel.style.display==='block'&&innerWidth>=860?panel.getBoundingClientRect().width/2+7:0}
-function openPanel(h){if(!EF.keep)efHide();panel.className='';panel.innerHTML=`<div id="panelGrip" role="separator" tabindex="0" aria-label="Resize panel"></div><button id="x" onclick="overview()" aria-label="Close">×</button>`+h;panel.style.display='block';panel.scrollTop=0;shiftT=panelOffset();shiftYT=innerWidth<860?innerHeight*.19:0;const grip=$('panelGrip');grip.setAttribute('aria-orientation',innerWidth>=860?'vertical':'horizontal')}
-function overview(){efHide();focused=sel=null;panel.style.display='none';shiftT=shiftYT=0;hint.style.display='';setMarkers();buildBar();flyTo(OV.pos.clone(),OV.tgt.clone(),2)}
+function openPanel(h){if(!EF.keep&&!GIS.keep){efHide();gisHide()}panel.className='';panel.innerHTML=`<div id="panelGrip" role="separator" tabindex="0" aria-label="Resize panel"></div><button id="x" onclick="overview()" aria-label="Close">×</button>`+h;panel.style.display='block';panel.scrollTop=0;shiftT=panelOffset();shiftYT=innerWidth<860?innerHeight*.19:0;const grip=$('panelGrip');grip.setAttribute('aria-orientation',innerWidth>=860?'vertical':'horizontal')}
+function overview(){gisHide();efHide();focused=sel=null;panel.style.display='none';shiftT=shiftYT=0;hint.style.display='';setMarkers();buildBar();flyTo(OV.pos.clone(),OV.tgt.clone(),2)}
 panel.addEventListener('pointerdown',e=>{if(e.target.id!=='panelGrip')return;e.preventDefault();const desktop=innerWidth>=860;panelDrag={id:e.pointerId,desktop,x:e.clientX,y:e.clientY,width:panel.getBoundingClientRect().width,height:panel.getBoundingClientRect().height};e.target.setPointerCapture(e.pointerId)});
 panel.addEventListener('pointermove',e=>{if(!panelDrag||panelDrag.id!==e.pointerId)return;const d=panelDrag;if(d.desktop){const max=Math.min(960,innerWidth*.8),min=Math.min(320,max);panel.style.width=Math.max(min,Math.min(max,d.width+d.x-e.clientX))+'px';shiftT=panelOffset()}else{const max=Math.min(innerHeight*.88,innerHeight-24),min=Math.min(180,max);panel.style.height=Math.max(min,Math.min(max,d.height+d.y-e.clientY))+'px'}});
 panel.addEventListener('pointerup',e=>{if(panelDrag&&panelDrag.id===e.pointerId)panelDrag=null});
@@ -445,10 +453,17 @@ function focusBody(id,key,aid){
   if(key){const s=S[key];dir=v.mesh.localToWorld(ll(s.lat,s.lon,v.R)).sub(c).normalize();dist=v.R*(innerWidth<860?5.2:2.7)}
   else{dir=camera.position.clone().sub(c).normalize();dist=v.R*(innerWidth<860?5.2:3.8)}
   setMarkers();buildBar();hint.style.display='none';flyTo(c.clone().add(dir.multiplyScalar(dist)),c,v.R*1.2);
+  if(GIS.active){gisRenderPanel();return}
   key?showSite(key,aid):showBody(id)}
 function buildBar(){
   bar.innerHTML='';
-  [['','Overview'],['earth','Earth'],['moon','Moon'],['mars','Mars']].forEach(([id,t])=>{const b=document.createElement('button');b.textContent=t;b.className=(focused||'')===id?'on':'';b.onclick=()=>id?focusBody(id):overview();bar.appendChild(b)});
+  [['','Overview'],['earth','Earth'],['moon','Moon'],['mars','Mars']].forEach(([id,t])=>{
+    const b=document.createElement('button');b.textContent=t;b.className=(!GIS.active&&(focused||'')===id)?'on':'';
+    b.onclick=()=>{if(GIS.active)gisHide();id?focusBody(id):overview()};bar.appendChild(b)
+  });
+  const gb=document.createElement('button');gb.textContent='GIS';gb.className=GIS.active?'on':'';
+  gb.onclick=()=>{if(GIS.active)overview();else gisOpen(focused&&['earth','moon','mars'].includes(focused)?focused:'earth')};
+  bar.appendChild(gb);
   bar.appendChild(TOOLS);bar.insertAdjacentHTML('beforeend','<span class="sp"></span>');
   const ld=document.createElement('button');ld.textContent='Load data';ld.onclick=()=>$('file').click();bar.appendChild(ld);
   if(CUSTOM){const rs=document.createElement('button');rs.textContent='Reset data';rs.onclick=()=>{CUSTOM=false;setData(JSON.parse(JSON.stringify(BASE)));toast('Named-site dataset restored')};bar.appendChild(rs)}
@@ -839,6 +854,192 @@ function pkBack(){const v=VIS[PK.body],c=v.mesh.position.clone(),dir=v.mesh.loca
   efHide();focused=PK.body;sel=null;setMarkers();buildBar();hint.style.display='none';flyTo(c.clone().add(dir.multiplyScalar(v.R*2.7)),c,v.R*1.2);pkShow()}
 function efBack(){EF.tid==='pick'?pkBack():showSite(EF.tid)}
 
+/* ---------- Planetary GIS ----------
+   Full planetary raster explorer for Earth, Moon, and Mars. Displays 1-degree gridded datasets
+   from NASA (LRO LOLA, LRO Diviner, MODIS Terra), NOAA (ETOPO 2022), and USGS (MGS MOLA). */
+const GIS_LAYER_INFO={
+  slope_p90:{short:'Steep Slope',name:'Steep slope (90th percentile)',cat:'Terrain',unit:'°',ramp:'terrain',desc:'Slope exceeded by only 10% of local terrain points; highlights steep cliffs and crater rims.'},
+  slope_median:{short:'Typical Slope',name:'Typical slope (median)',cat:'Terrain',unit:'°',ramp:'terrain',desc:'Median local slope; indicates general ground traversability.'},
+  relief:{short:'Local Relief',name:'Local relief (P95 − P5)',cat:'Landform',unit:'m',ramp:'relief',desc:'Elevation difference between 95th and 5th percentiles within each 111 km patch.'},
+  hypso:{short:'Hypsometry',name:'Hypsometric integral',cat:'Landform',unit:'index',ramp:'hypso',desc:'Landform morphology (0–1): low = plains with isolated peaks; high = elevated plateau.'},
+  ts_mean:{short:'Surface Temp',name:'Mean surface temperature',cat:'Thermal',unit:'°C',ramp:'temp',desc:'Mean skin temperature averaged over day and night observations.'},
+  ts_range:{short:'Temp Swing',name:'Day-night temp swing',cat:'Thermal',unit:'°C',ramp:'swing',desc:'Thermal range between local daytime and nighttime surface temperatures.'},
+  t_mean:{short:'Air Temp (2m)',name:'Mean air temperature (2 m)',cat:'Air',unit:'°C',ramp:'temp',desc:'2-meter ambient air temperature for bioclimatic context (Earth only).'},
+  t_range:{short:'Air Temp Range',name:'Annual air temp range',cat:'Air',unit:'°C',ramp:'swing',desc:'Annual air temperature range (warmest minus coldest month, Earth only).'}
+};
+const GIS_RAMPS={
+  terrain:[[0,[26,35,60]],[.2,[40,110,120]],[.45,[100,175,90]],[.7,[230,170,50]],[.9,[225,75,45]],[1,[255,235,220]]],
+  relief:[[0,[15,25,55]],[.25,[30,120,140]],[.5,[110,190,90]],[.75,[240,195,40]],[.9,[215,60,60]],[1,[255,255,255]]],
+  temp:[[0,[50,15,95]],[.2,[35,80,190]],[.4,[50,170,210]],[.6,[70,190,120]],[.8,[245,195,45]],[1,[235,45,30]]],
+  swing:[[0,[20,30,65]],[.3,[60,100,180]],[.6,[190,110,210]],[.85,[245,120,60]],[1,[255,240,150]]],
+  hypso:[[0,[20,45,85]],[.35,[35,135,140]],[.65,[130,190,80]],[1,[250,225,70]]]
+};
+var GIS={active:false,keep:false,body:'earth',layer:'slope_p90',opacity:.8,smooth:true,probed:null,meshes:{},texs:{},cvs:{},grids:{},ranges:{},pin:null};
+function gisRamp(type,t){
+  const stops=GIS_RAMPS[type]||GIS_RAMPS.terrain;if(t<=stops[0][0])return stops[0][1];
+  for(let i=1;i<stops.length;i++){const[p0,c0]=stops[i-1],[p1,c1]=stops[i];if(t<=p1){const u=(t-p0)/(p1-p0);return[Math.round(c0[0]+(c1[0]-c0[0])*u),Math.round(c0[1]+(c1[1]-c0[1])*u),Math.round(c0[2]+(c1[2]-c0[2])*u)]}}
+  return stops[stops.length-1][1]}
+function gisLegendGradient(type){
+  const stops=GIS_RAMPS[type]||GIS_RAMPS.terrain;
+  return 'linear-gradient(90deg,'+stops.map(([pos,rgb])=>`rgb(${rgb.join(',')}) ${Math.round(pos*100)}%`).join(',')+')'}
+function gisAvailableLayers(body){
+  if(body==='earth')return['slope_p90','slope_median','relief','hypso','ts_mean','ts_range','t_mean','t_range'];
+  if(body==='moon')return['slope_p90','slope_median','relief','hypso','ts_mean','ts_range'];
+  if(body==='mars')return['slope_p90','slope_median','relief','hypso'];
+  return['slope_p90']}
+async function gisLoad(body){
+  if(GIS.grids[body])return GIS.grids[body];
+  const isEarth=body==='earth',metaUrl=isEarth?'data/grid.json':`data/${body}_grid.json`,
+    get=async u=>{const r=await fetch(u,{cache:'no-cache'});if(!r.ok)throw new Error(u+' returned HTTP '+r.status);return r},
+    m=await(await get(metaUrl)).json(),v={};
+  for(const f of m.features){
+    const binUrl=isEarth?`data/${f.key}.bin`:`data/${body}_${f.key}.bin`,
+      buf=await(await get(binUrl)).arrayBuffer();
+    if(buf.byteLength===180*360*4)v[f.key]=new Float32Array(buf)}
+  return GIS.grids[body]={m,v}}
+function gisPaint(body,layerKey,arr,min,max){
+  const v=VIS[body];
+  if(!GIS.cvs[body]){
+    const cv=document.createElement('canvas');cv.width=360;cv.height=180;GIS.cvs[body]=cv;
+    const tex=new THREE.CanvasTexture(cv);
+    tex.magFilter=GIS.smooth?THREE.LinearFilter:THREE.NearestFilter;
+    tex.minFilter=THREE.LinearFilter;
+    tex.generateMipmaps=false;
+    GIS.texs[body]=tex;
+    const mesh=new THREE.Mesh(new THREE.SphereGeometry(v.R*1.006,96,64),new THREE.MeshBasicMaterial({map:tex,transparent:true,opacity:GIS.opacity,depthWrite:false}));
+    v.mesh.add(mesh);GIS.meshes[body]=mesh}
+  const cv=GIS.cvs[body],ctx=cv.getContext('2d'),img=ctx.createImageData(360,180),d=img.data,
+    span=(max-min)||1,rampType=(GIS_LAYER_INFO[layerKey]||{}).ramp||'terrain';
+  for(let i=0;i<arr.length;i++){
+    const val=arr[i],o=i*4;
+    if(val!==val){d[o]=0;d[o+1]=0;d[o+2]=0;d[o+3]=0;continue}
+    const norm=Math.max(0,Math.min(1,(val-min)/span)),rgb=gisRamp(rampType,norm);
+    d[o]=rgb[0];d[o+1]=rgb[1];d[o+2]=rgb[2];d[o+3]=255}
+  ctx.putImageData(img,0,0);
+  GIS.texs[body].magFilter=GIS.smooth?THREE.LinearFilter:THREE.NearestFilter;
+  GIS.texs[body].needsUpdate=true;GIS.meshes[body].visible=true;GIS.meshes[body].material.opacity=GIS.opacity;
+  for(const b of ['earth','moon','mars'])if(b!==body&&GIS.meshes[b])GIS.meshes[b].visible=false}
+async function gisUpdate(){
+  const body=GIS.body,layerKey=GIS.layer;
+  let G;try{G=await gisLoad(body)}catch(e){toast('Could not load GIS dataset: '+e.message);return}
+  const arr=G.v[layerKey];
+  if(!arr){if(GIS.meshes[body])GIS.meshes[body].visible=false;gisRenderPanel();return}
+  let r=GIS.ranges[body+'_'+layerKey];
+  if(!r){
+    let min=Infinity,max=-Infinity;const valid=[];
+    for(let i=0;i<arr.length;i++){const val=arr[i];if(val===val){if(val<min)min=val;if(val>max)max=val;valid.push(val)}}
+    valid.sort((a,b)=>a-b);
+    const median=valid.length?valid[Math.floor(valid.length/2)]:0;
+    r=GIS.ranges[body+'_'+layerKey]={min,median,max,count:valid.length}}
+  gisPaint(body,layerKey,arr,r.min,r.max);gisRenderPanel()}
+function gisSetOpacity(val){
+  GIS.opacity=val;const m=GIS.meshes[GIS.body];
+  if(m&&m.material)m.material.opacity=val;
+  const el=$('gis-op-val');if(el)el.textContent=Math.round(val*100)+'%'}
+function gisToggleSmooth(smooth){
+  GIS.smooth=smooth;
+  for(const b in GIS.texs){
+    if(GIS.texs[b]){
+      GIS.texs[b].magFilter=smooth?THREE.LinearFilter:THREE.NearestFilter;
+      GIS.texs[b].needsUpdate=true;
+    }
+  }
+  gisRenderPanel()}
+async function gisSwitchBody(newBody){
+  GIS.body=newBody;
+  const avail=gisAvailableLayers(newBody);
+  if(!avail.includes(GIS.layer))GIS.layer=avail[0]||'slope_p90';
+  GIS.probed=null;
+  if(GIS.pin&&GIS.pin.parent)GIS.pin.parent.remove(GIS.pin);GIS.pin=null;
+  if(clouds)clouds.visible=newBody!=='earth';
+  focused=newBody;sel=null;
+  const v=VIS[newBody],c=v.mesh.position.clone(),dir=camera.position.clone().sub(c).normalize(),dist=v.R*(innerWidth<860?5.2:3.8);
+  setMarkers();buildBar();hint.style.display='none';flyTo(c.clone().add(dir.multiplyScalar(dist)),c,v.R*1.2);
+  GIS.keep=true;gisRenderPanel();GIS.keep=false;
+  await gisUpdate()}
+async function gisSwitchLayer(layerKey){
+  GIS.layer=layerKey;GIS.keep=true;gisRenderPanel();GIS.keep=false;await gisUpdate()}
+function gisProbe(body,point){
+  const q=VIS[body].mesh.worldToLocal(point.clone()).normalize(),
+    lat=Math.asin(Math.max(-1,Math.min(1,q.y)))*180/Math.PI,
+    lon=Math.atan2(-q.z,q.x)*180/Math.PI,
+    i=Math.min(179,Math.max(0,Math.floor((90-lat)/1.0))),
+    j=((Math.floor((lon+180)/1.0)%360)+360)%360,
+    k=i*360+j,cla=90-(i+.5)*1.0,clo=-180+(j+.5)*1.0,
+    grid=GIS.grids[body],vals={};
+  if(grid&&grid.m&&grid.m.features){
+    grid.m.features.forEach(f=>{const a=grid.v[f.key];if(a&&a[k]===a[k])vals[f.key]=a[k]})}
+  GIS.probed={lat,lon,cla,clo,k,vals,body};
+  const v=VIS[body];if(GIS.pin&&GIS.pin.parent)GIS.pin.parent.remove(GIS.pin);
+  const up=ll(lat,lon,1).normalize();
+  GIS.pin=mkPin(v.R,up,body==='earth'?0x5ec8ff:0xffc857,true);v.mesh.add(GIS.pin);
+  GIS.keep=true;gisRenderPanel();GIS.keep=false}
+function gisGetSourceNotes(){
+  const g=GIS.grids[GIS.body];if(!g||!g.m||!g.m.features)return '<div class="note2">Loading sources…</div>';
+  return g.m.features.map(f=>{const li=GIS_LAYER_INFO[f.key]||{};return `<div class="note2" style="margin:4px 0"><b>${esc(li.name||f.key)}:</b> ${esc(f.source||f.label||'')}</div>`}).join('')}
+function gisRenderPanel(){
+  const body=GIS.body,bName=DATA&&DATA.bodies&&DATA.bodies[body]?DATA.bodies[body].name:cap(body),
+    avail=gisAvailableLayers(body),activeInfo=GIS_LAYER_INFO[GIS.layer]||{short:GIS.layer,name:GIS.layer,cat:'GIS',unit:'',desc:''},
+    rampType=activeInfo.ramp||'terrain',range=GIS.ranges[body+'_'+GIS.layer];
+  let probeHtml='';
+  if(GIS.probed){
+    const p=GIS.probed,activeV=p.vals[GIS.layer];
+    probeHtml=`<div class="gis-probe">
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <b style="font-size:13px;color:${body==='earth'?'var(--acc)':'var(--gold)'}">${efLL(p.lat,p.lon)}</b>
+        <span style="font-size:11px;color:var(--mute)">cell ${efLL(p.cla,p.clo)}</span>
+      </div>
+      <div style="margin-top:6px;font-size:15px;font-weight:600;font-variant-numeric:tabular-nums;color:var(--text)">
+        ${esc(activeInfo.short)}: <span style="color:${body==='earth'?'var(--acc)':'var(--gold)'}">${activeV!=null?fmt(activeV)+' '+esc(activeInfo.unit):'No data'}</span>
+      </div>
+      <details class="wts" style="margin-top:6px"><summary>All layers at this cell</summary>
+        <div style="padding-top:4px">${avail.map(k=>{const v=p.vals[k],li=GIS_LAYER_INFO[k]||{};return `<div class="mr one" style="padding:2px 0"><div class="ml">${esc(li.short||k)}</div><div class="mv">${v!=null?fmt(v)+' '+esc(li.unit):'no data'}</div></div>`}).join('')}</div>
+      </details>
+    </div>`}
+  else{probeHtml='<div class="note2" style="margin:6px 0 10px">Click anywhere on the globe to inspect coordinates and real values.</div>'}
+
+  const content=`<div class="kick">Planetary GIS</div><h2>${bName} GIS</h2>
+    <div style="margin:10px 0 12px"><div class="seg" role="tablist">${[['earth','Earth'],['moon','Moon'],['mars','Mars']].map(([k,l])=>`<button class="${body===k?'on':''}" onclick="gisSwitchBody('${k}')">${l}</button>`).join('')}</div></div>
+    <div class="grp">Choose Layer</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:8px 0 12px">
+      ${avail.map(k=>{
+        const on=GIS.layer===k,li=GIS_LAYER_INFO[k]||{};
+        return `<button class="gis-opt${on?' on':''}" onclick="gisSwitchLayer('${k}')">
+          <span class="gis-opt-title">${esc(li.short)}</span>
+          <span class="gis-opt-unit">${esc(li.unit)}</span>
+        </button>`}).join('')}
+    </div>
+    <div style="background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;margin:8px 0">
+      <div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:13.5px;color:var(--text)">${esc(activeInfo.name)}</b><span style="font:500 11px var(--mono);color:var(--acc)">${esc(activeInfo.unit)}</span></div>
+      <div class="sub" style="margin:3px 0 8px;font-size:11.5px">${esc(activeInfo.desc)}</div>
+      <div class="efl" style="background:${gisLegendGradient(rampType)}"></div>
+      <div class="efs"><span>${range?fmt(range.min)+' '+esc(activeInfo.unit):'…'}</span><span>median: ${range?fmt(range.median)+' '+esc(activeInfo.unit):'…'}</span><span>${range?fmt(range.max)+' '+esc(activeInfo.unit):'…'}</span></div>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin:10px 0 4px">
+      <span style="font:500 11px var(--mono);color:var(--mute);text-transform:uppercase;letter-spacing:.06em">Blend: <span id="gis-op-val" style="color:var(--text)">${Math.round(GIS.opacity*100)}%</span></span>
+      <div class="seg" style="height:24px"><button class="${GIS.smooth?'on':''}" style="font-size:10.5px;padding:2px 8px" onclick="gisToggleSmooth(true)">Smooth</button><button class="${!GIS.smooth?'on':''}" style="font-size:10.5px;padding:2px 8px" onclick="gisToggleSmooth(false)">Grid</button></div>
+    </div>
+    <input type="range" min="0.1" max="1" step="0.05" value="${GIS.opacity}" oninput="gisSetOpacity(parseFloat(this.value))" style="width:100%;accent-color:var(--acc);margin-bottom:8px">
+    <div class="grp" style="margin-top:10px">Point Inspector</div>${probeHtml}
+    <details class="wts" style="margin-top:12px"><summary>Dataset Sources &amp; Citations</summary><div style="padding:6px 0 8px">${gisGetSourceNotes()}</div></details>
+    <div class="btns" style="margin-top:12px"><button class="pri" onclick="overview()">Back to Overview</button></div>`;
+  GIS.keep=true;openPanel(content);GIS.keep=false}
+async function gisOpen(body,layerKey){
+  GIS.active=true;GIS.body=body||'earth';
+  const avail=gisAvailableLayers(GIS.body);
+  if(layerKey&&avail.includes(layerKey))GIS.layer=layerKey;
+  else if(!avail.includes(GIS.layer))GIS.layer=avail[0]||'slope_p90';
+  if(clouds)clouds.visible=GIS.body!=='earth';
+  focusBody(GIS.body);
+  GIS.keep=true;gisRenderPanel();GIS.keep=false;
+  await gisUpdate()}
+function gisHide(){
+  GIS.active=false;
+  for(const b in GIS.meshes)if(GIS.meshes[b])GIS.meshes[b].visible=false;
+  if(GIS.pin&&GIS.pin.parent){GIS.pin.parent.remove(GIS.pin);GIS.pin=null}
+  if(clouds)clouds.visible=true;
+  buildBar()}
+
 /* ---------- Picking ---------- */
 const ray=new THREE.Raycaster(),mouse=new THREE.Vector2();let down=null;
 renderer.domElement.addEventListener('pointerdown',e=>{down={x:e.clientX,y:e.clientY,t:performance.now()};tween=null});
@@ -846,7 +1047,11 @@ renderer.domElement.addEventListener('pointerup',e=>{
   if(!down||Math.hypot(e.clientX-down.x,e.clientY-down.y)>6||performance.now()-down.t>500){down=null;return}down=null;
   mouse.set(e.clientX/innerWidth*2-1,-(e.clientY/innerHeight)*2+1);ray.setFromCamera(mouse,camera);
   const hit=ray.intersectObjects([...meshes,...markers.filter(m=>m.visible)],false)[0];if(!hit)return;const u=hit.object.userData;
-  if(u.kind==='site')focusBody(S[u.key].body,u.key);else if(focused!==u.id)focusBody(u.id);else if(PK_BODIES.includes(u.id))pickAt(u.id,hit.point)});
+  if(GIS.active){
+    if(u.id===GIS.body){gisProbe(GIS.body,hit.point);return}
+    if(['earth','moon','mars'].includes(u.id)){gisSwitchBody(u.id);return}
+  }
+  if(u.kind==='site'){if(GIS.active)gisHide();focusBody(S[u.key].body,u.key)}else if(focused!==u.id)focusBody(u.id);else if(PK_BODIES.includes(u.id))pickAt(u.id,hit.point)});
 
 /* ---------- Hover and search ---------- */
 renderer.domElement.addEventListener('pointermove',e=>{if(down)return;mouse.set(e.clientX/innerWidth*2-1,-(e.clientY/innerHeight)*2+1);ray.setFromCamera(mouse,camera);
@@ -889,6 +1094,7 @@ function tick(now){requestAnimationFrame(tick);
     if(q.on)pingTick(q.g,now,0);if(!(fc&&pv.z<1)){q.el.style.display='none';continue}
     place(q.el,(pv.x*.5+.5)*innerWidth,(-pv.y*.5+.5)*innerHeight,q.el.textContent.length*6.6+20,q.on?25:8,-34,-10)}
   else for(const q of (EF.pinEls||[]))q.el.style.display='none';
+  if(GIS.pin&&GIS.pin.userData&&GIS.pin.userData.ping)pingTick(GIS.pin,now,0);
   declutter();
   ringsG.visible=belt.visible=!focused;belt.rotation.y+=.00006;SUNSP.scale.setScalar(120+7*Math.sin(now/900));
   if(!focused){MO.a+=.12*dt;VIS.moon.mesh.position.set(MO.r*Math.cos(MO.a),MO.r*.12*Math.sin(MO.a),MO.r*Math.sin(MO.a))}

@@ -63,6 +63,7 @@ Do not double-click `index.html`: browsers block `fetch` on `file://` pages, so 
   - **Profile and Data:** compare the site with the best place on Earth (default), another top place, or a named analog site, using the dropdown at the top.
   - **Base plan:** the base planner (section 3).
 - **Find on Earth:** scores every 1-degree Earth cell against the site and paints the globe. Turn dimensions on or off and click a place to see why it scored as it did.
+- **GIS:** top banner tool that displays continuous 1-degree planetary environmental rasters across Earth (8 layers), Moon (6 layers), and Mars (4 layers) with scientific colormaps, opacity slider, smooth interpolation toggle, dynamic range legends, and click-to-probe cell coordinates and readings.
 - **Load data:** drop a dataset JSON (schema `earth-analogs/v1`) to replace the embedded named-site data.
 
 How the score works: per feature, `1 - min(1, |difference| / scale)`; each dimension (terrain, landform, thermal) counts equally and its features share that weight; a cell with a missing feature is scored on the rest. The `scale` of each feature is set in `build_grid.py` (`FEATURES`) and is a starting guess that needs a written justification.
