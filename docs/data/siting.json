@@ -175,6 +175,40 @@
     }
    }
   },
+  "mars_austere": {
+   "name": "NASA Mars Austere Sortie",
+   "body": "mars",
+   "crew": 4,
+   "days": 30,
+   "pw": 25.0,
+   "nuc": false,
+   "prio": "science",
+   "src": "NASA-SP-2009-566-ADD (Austere Human Missions to Mars)",
+   "url": "https://ntrs.nasa.gov/citations/20090042784",
+   "desc": "NASA short-stay opposition Mars sortie: 4 crew, 30-day surface stay, solar-powered minimal surface footprint.",
+   "a": {
+    "vol_per_crew": 30.0,
+    "cell_eff": 0.30,
+    "losses": 0.20,
+    "dod": 0.80,
+    "rt_eff": 0.85,
+    "wh_per_kg": 180.0,
+    "pad_dist": 1500.0,
+    "slope_limit": 12.0,
+    "margin": 1.25
+   },
+   "site_facts": {
+    "jezero": {
+     "transmission": 0.70
+    },
+    "olympus": {
+     "transmission": 0.75
+    },
+    "valles": {
+     "transmission": 0.70
+    }
+   }
+  },
   "apollo": {
    "name": "Apollo Short Sortie",
    "body": "moon",

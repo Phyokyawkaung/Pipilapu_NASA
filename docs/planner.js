@@ -10,7 +10,6 @@
 (function () {
 'use strict';
 const CSS = `
-.pl-ban{border:1px solid var(--gold);background:none;border-radius:6px;padding:8px 10px;font-size:12px;line-height:1.45;margin:10px 0}
 .pl-in{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:8px}
 .pl-in label,.pl-asm label{display:block;font-size:11px;color:var(--mute);margin-bottom:3px}
 .pl-in input,.pl-asm input,.pl-fin{width:100%;box-sizing:border-box;padding:7px 8px;border-radius:4px;border:1px solid var(--line);background:rgba(0,0,0,.25);color:var(--text);font:inherit;font-size:13px}
@@ -278,7 +277,7 @@ const RULES = [
 ];
 
 /* ---------- rendering ---------- */
-BP.html = t => `<div class="tabhint">Enter mission parameters. The planner places the base on real terrain with simple rules, routes roads along the gentlest slopes, and explains each choice.</div><div id="pl-root"><div class="sub" style="margin-top:12px">Loading base planner…</div></div>`;
+BP.html = t => `<div id="pl-root"><div class="sub" style="margin-top:12px">Loading base planner…</div></div>`;
 
 BP.mount = async t => {
   const root = document.getElementById('pl-root'); if (!root) return;
@@ -294,14 +293,15 @@ BP.mount = async t => {
   if (T && (BP.st.layer === 'sun' || BP.st.layer === 'earth') && !T[BP.st.layer]) BP.st.layer = 'relief';
   const a = BP.st.a, A = BP.cfg.assumptions;
   const layers = [['relief', 'Relief'], ['slope', 'Slope'], ...(T && T.sun ? [['sun', 'Sunlight']] : []), ...(T && T.earth ? [['earth', 'Earth view']] : [])];
-  const presets = BP.cfg.presets || {};
+  const allPresets = BP.cfg.presets || {};
+  const presets = Object.fromEntries(Object.entries(allPresets).filter(([, p]) => !p.body || p.body === BP.body));
+  if (BP.st.preset && !presets[BP.st.preset]) BP.st.preset = '';
   const curPres = presets[BP.st.preset];
   const presOpts = Object.entries(presets).map(([k, p]) =>
-    `<option value="${k}" ${BP.st.preset === k ? 'selected' : ''}>${E(p.name)} (${p.body === 'moon' ? 'Moon' : 'Mars'} · ${p.crew} crew · ${p.days} d · ${p.pw} kW)</option>`
+    `<option value="${k}" ${BP.st.preset === k ? 'selected' : ''}>${E(p.name)} (${p.crew} crew · ${p.days} d · ${p.pw} kW)</option>`
   ).join('');
   const citeHtml = curPres ? `${E(curPres.desc)} · Source: <a class="lnk" href="${E(curPres.url)}" target="_blank" rel="noopener">${E(curPres.src)}</a>` : '';
   root.innerHTML = `
-  <div class="pl-ban"><b>Screening estimate, not a base design.</b> Facts come from the named NASA/USGS sources or say "${NS}". Design parameters are your own choices: type them below (this browser remembers them).</div>
   <div class="pl-pres">
     <label for="pl-preset">Mission preset</label>
     <select id="pl-preset">
@@ -318,13 +318,12 @@ BP.mount = async t => {
   </div>
   <div class="pl-row"><div class="pl-seg" id="pl-prio">${[['safety', 'Safety'], ['science', 'Science'], ['cost', 'Low cost']].map(([k, l]) => `<button data-v="${k}" class="${BP.st.prio === k ? 'on' : ''}">${l}</button>`).join('')}</div>
     <label class="pl-chk"><input type="checkbox" id="pl-nuc" ${BP.st.nuc ? 'checked' : ''}> Allow nuclear power</label></div>
-  <details class="pl-d" id="pl-dp" ${Object.values(a).some(v => v == null) ? 'open' : ''}><summary>Design parameters (your choices, not data)</summary>
-  <div class="note2" style="margin:6px 0 2px">Type a number in each box; percentages as 0 to 100. Only what the current plan needs is listed under the results, and clicking an item there jumps to its box. The Nuclear group appears when nuclear power is allowed.</div>
-  ${paramForm(A, a)}<div class="pl-row" style="justify-content:space-between"><span class="note2" style="margin:0">Agreed team values can go into docs/data/siting.json ("assumptions") with a source, so everyone starts from them.</span><button class="lnk" id="pl-clear" style="font-size:12px">Clear my inputs</button></div></details>
+  <details class="pl-d" id="pl-dp" ${Object.values(a).some(v => v == null) ? 'open' : ''}><summary>Design parameters</summary>
+  ${paramForm(A, a)}<div class="pl-row" style="justify-content:flex-end"><button class="lnk" id="pl-clear" style="font-size:12px">Clear my inputs</button></div></details>
   <div class="pl-kpi" id="pl-kpi"></div><div class="pl-need" id="pl-need"></div>
   ${T ? `<div class="pl-row" style="justify-content:space-between;margin-bottom:6px"><div class="pl-seg" id="pl-layer">${layers.map(([k, l]) => `<button data-v="${k}" class="${BP.st.layer === k ? 'on' : ''}">${l}</button>`).join('')}</div><span><button class="lnk" id="pl-view" style="font-size:12px;margin-right:10px">${BP.st.view === 'all' ? 'Zoom to base' : 'Show whole patch'}</button><button class="lnk" id="pl-reset" style="font-size:12px;margin-right:10px">Reset habitat spot</button><button class="lnk" id="pl-png" style="font-size:12px">Save image</button></span></div>
     <div class="pl-map"><canvas id="pl-cv" aria-label="Map of the base layout on real terrain"></canvas></div><div class="pl-leg" id="pl-leg"></div><div class="pl-read" id="pl-read">Move over the map to read elevation and slope. Click to move the habitat.</div>
-    <div class="note2">${E(T.km)} × ${E(T.km)} km, ${E(T.cell_m)} m per cell. Centre: ${E(site.center_src || '')} Map up: ${E(T.up)}. Elevation: <a class="lnk" href="${E(T.dem.url)}" target="_blank" rel="noopener">${E(T.dem.name)}</a>${T.sun_src ? `. Sunlight: <a class="lnk" href="${E(T.sun_src.url)}" target="_blank" rel="noopener">${E(T.sun_src.name)}</a>` : ''}${T.earth_src ? `. Earth view: <a class="lnk" href="${E(T.earth_src.url)}" target="_blank" rel="noopener">${E(T.earth_src.name)}</a>` : ''}. Accessed ${E(T.accessed)}.</div>`
+    <div class="note2" style="margin-top:6px;display:flex;justify-content:space-between;flex-wrap:wrap"><span>${E(T.km)} × ${E(T.km)} km (${E(T.cell_m)} m/cell) · Elevation: <a class="lnk" href="${E(T.dem.url)}" target="_blank" rel="noopener">${E(T.dem.name)}</a>${T.sun_src ? ` · Sun: <a class="lnk" href="${E(T.sun_src.url)}" target="_blank" rel="noopener">${E(T.sun_src.name)}</a>` : ''}</span><span>Map up: ${E(T.up)}</span></div>`
     : `<div id="pl-svg"></div><div class="note2">Schematic only: no terrain file for this site yet. Make one with <b>python pipeline/build_site_terrain.py --site ${E(t.id)}</b>.</div>`}
   <div class="grp">Suggestions</div><ul class="pl-sug" id="pl-sug"></ul>
   <div class="grp">Site facts</div><div id="pl-facts"></div>
@@ -342,7 +341,7 @@ BP.mount = async t => {
   const chg = () => { unpreset(); saveSt(); BP.update(); };
   function applyPreset(k) {
     const p = (BP.cfg.presets || {})[k];
-    if (!p) { unpreset(); saveSt(); BP.update(); return; }
+    if (!p || (p.body && p.body !== BP.body)) { unpreset(); saveSt(); BP.update(); return; }
     BP.st.preset = k;
     BP.st.crew = String(p.crew);
     BP.st.days = String(p.days);
@@ -410,13 +409,13 @@ BP.update = keepFacts => {
     };
     const tRows = c.L ? [['Median slope within 2.5 km of habitat', Math.round(c.L.stats.medSlope) + '°', 'From the elevation map'], ...(c.L.stats.flatShare != null ? [['Ground under ' + c.a.slope_limit + '° within 2.5 km', pctS(c.L.stats.flatShare), 'From the elevation map and your slope limit']] : []), ['Relief across the patch', sig2(c.L.stats.relief) + ' m', 'Highest minus lowest point on the elevation map']]
       .map(r => `<tr><td>${r[0]}<small>${r[2]}</small></td><td>${r[1]}</td></tr>`).join('') : '';
-    $('pl-facts').innerHTML = `<table class="pl-t">${tRows}${Object.entries(c.site.facts).map(([k, x]) => `<tr><td>${E(x.label)}<small>${E(x.src)}</small></td><td style="min-width:130px">${fval(k, x)}</td></tr>`).join('')}</table>
-      <div class="note2">Sunlight on panel while lit: ${c.I != null ? sig2(c.I) + ' W/m² ' : '– '}${c.body === 'moon' ? '(1361 W/m², NASA Moon Fact Sheet; panel turns to face the Sun)' : '(586.2 W/m², NASA Mars Fact Sheet, × 2 × cos(latitude) ÷ π × share reaching the ground)'}.</div>`;
+    const sunRow = `<tr><td>Sunlight on panel<small>${c.body === 'moon' ? 'NASA Moon Fact Sheet (1361 W/m²)' : 'NASA Mars Fact Sheet (586.2 W/m² × 2×cos(lat)/π × transmission)'}</small></td><td>${c.I != null ? sig2(c.I) + ' W/m²' : '–'}</td></tr>`;
+    $('pl-facts').innerHTML = `<table class="pl-t">${tRows}${sunRow}${Object.entries(c.site.facts).map(([k, x]) => `<tr><td>${E(x.label)}<small>${E(x.src)}</small></td><td style="min-width:130px">${fval(k, x)}</td></tr>`).join('')}</table>`;
   }
-  $('pl-rules').innerHTML = `<table class="pl-t"><tr><th>Rule</th><th>If</th><th>Then</th><th>Because</th></tr>${RULES.map(r => `<tr style="${c.out.some(o => o.id === r.id) ? '' : 'opacity:.45'}"><td>${r.id}</td><td>${E(r.if)}</td><td>${E(r.then)}</td><td>${E(r.because)}</td></tr>`).join('')}</table><div class="note2">Faded rules do not apply to the current inputs. Rules live in docs/planner.js (RULES). Placement weights, such as 1° of slope counting as 1 km of distance when picking the habitat, are planner choices and are written next to each rule in the code.</div>`;
+  $('pl-rules').innerHTML = `<table class="pl-t"><tr><th>Rule</th><th>If</th><th>Then</th><th>Because</th></tr>${RULES.map(r => `<tr style="${c.out.some(o => o.id === r.id) ? '' : 'opacity:.45'}"><td>${r.id}</td><td>${E(r.if)}</td><td>${E(r.then)}</td><td>${E(r.because)}</td></tr>`).join('')}</table>`;
   const K = BP.cfg.constants;
   $('pl-form').innerHTML = `<table class="pl-t"><tr><td>Power</td><td>P = (typed kW, or crew × kW per crew member) × margin</td></tr><tr><td>Solar array</td><td>A = P × (f + (1−f)/e) ÷ (f × I × η × (1−L))</td></tr><tr><td>Batteries</td><td>E = P × T_dark ÷ (D × e)</td></tr><tr><td>Habitat</td><td>V = crew × volume per crew member (×1.5 over 180 days)</td></tr><tr><td>Mars sunlight</td><td>I = 2 × 586.2 × cos(lat) ÷ π × share reaching the ground</td></tr><tr><td>Roads</td><td>Cheapest path from the habitat; each step costs length × (1 + (grade ÷ slope limit)²), 50× more above twice the limit</td></tr></table>
-    <div class="note2">f sunlit share, I sunlight on panel, η cell efficiency, L other losses, D depth of discharge, e round-trip efficiency. Outputs rounded to 2 significant figures. Constants: ${Object.values(K).map(k => `<a class="lnk" href="${E(k.url)}" target="_blank" rel="noopener">${E(k.src)}</a> ${k.v} ${E(k.u)}`).join(' · ')}.</div>`;
+    <div class="note2">${Object.values(K).map(k => `<a class="lnk" href="${E(k.url)}" target="_blank" rel="noopener">${E(k.src)}</a> ${k.v} ${E(k.u)}`).join(' · ')}.</div>`;
   if (c.L) drawTerrain(c); else drawSchematic(c);
 };
 
