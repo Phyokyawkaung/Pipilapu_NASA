@@ -438,7 +438,7 @@ function rebuildMarkers(){
 let focused=null,tween=null,sel=null,shift=0,shiftT=0;
 const $=id=>document.getElementById(id),bar=$('bar'),panel=$('panel'),hint=$('hint'),TOOLS=$('tools');
 function flyTo(pos,tgt,minD){tween={t0:performance.now(),dur:1500,p0:camera.position.clone(),a:controls.target.clone(),p1:pos,b:tgt,minD};controls.minDistance=Math.min(controls.minDistance,minD)}
-function setMarkers(){markers.forEach(m=>{const v=S[m.userData.key].body===focused;m.visible=m.userData.ring.visible=v;m.userData.ring.scale.setScalar(sel===m.userData.key?1.35:hov===m?1.2:1)})}
+function setMarkers(){markers.forEach(m=>{const v=S[m.userData.key].body===focused;m.visible=m.userData.ring.visible=v;m.userData.ring.scale.setScalar(sel===m.userData.key?1.35:hov===m?1.2:1)});if(PK&&PK.pin)PK.pin.visible=PK.body===focused}
 function openPanel(h){HEAT=false;if(!EF.keep)efHide();panel.className='';panel.innerHTML=`<button id="x" onclick="overview()" aria-label="Close">×</button>`+h;panel.style.display='block';panel.scrollTop=0;shiftT=innerWidth>=860?Math.min(660,innerWidth*.58)/2+7:0}
 function overview(){efHide();tourStop();NS.from=false;focused=sel=null;panel.style.display='none';shiftT=0;hint.style.display='';setMarkers();buildBar();flyTo(OV.pos.clone(),OV.tgt.clone(),2)}
 function focusBody(id,key,aid){
@@ -496,6 +496,7 @@ function showDeco(id){const v=VIS[id],o=['','1st','2nd','3rd','4th','5th','6th',
   <div class="btns"><button onclick="overview()">Back to overview</button><button onclick="focusBody('earth')">Go to Earth</button></div>`)}
 function showBody(id){const b=DATA.bodies[id];if(!b)return showDeco(id);
   openPanel(`<div class="kick">Planetary body</div><h2>${b.name}</h2><div class="sub">${b.summary||''}</div>${mockBanner()}
+  ${PK_BODIES.includes(id)?`<div class="tabhint">Click anywhere on the ${esc(b.name)} to see the terrain around that point and find the most similar places on Earth.</div>`:''}
   <div class="grp">Key facts</div>${(b.facts||[]).map(f=>`<div class="mr one"><div class="ml">${f.label}</div><div class="mv">${f.value}</div></div>`).join('')}
   <div class="grp">Sites</div>${DATA.sites.filter(s=>s.body===id).map(s=>`<button class="card" onclick="focusBody('${id}','${s.id}')"><span>${s.name}</span><b>${s.type==='target'?'candidate':'analog'}</b></button>`).join('')}`)}
 function showSite(id,aid){
@@ -768,7 +769,7 @@ function efPaint(){
     const v=VIS.earth;EF.mesh=new THREE.Mesh(new THREE.SphereGeometry(v.R*1.006,96,64),new THREE.MeshBasicMaterial({map:t,transparent:true,depthWrite:false}));v.mesh.add(EF.mesh)}
   EF.tex.needsUpdate=true;EF.mesh.visible=true}
 function efFly(la,lo){const v=VIS.earth,c=v.mesh.position.clone(),dir=v.mesh.localToWorld(ll(la,lo,v.R)).sub(c).normalize();flyTo(c.clone().add(dir.multiplyScalar(v.R*2.7)),c,v.R*1.2)}
-function efMsg(title,html){EF.keep=true;openPanel(`<div class="kick">Find on Earth</div><h2>${title}</h2>${html}<div class="btns"><button class="pri" onclick="showSite('${EF.tid}')">Back to ${esc(S[EF.tid].name)}</button></div>`);EF.keep=false}
+function efMsg(title,html){EF.keep=true;openPanel(`<div class="kick">Find on Earth</div><h2>${title}</h2>${html}<div class="btns"><button class="pri" onclick="efBack()">Back to ${esc(S[EF.tid].name)}</button></div>`);EF.keep=false}
 async function efStart(tid){
   EF.tid=tid;
   try{await efLoad()}catch(e){return efMsg('Earth grid not found',`<div class="mp">The website could not read the grid files in <b>docs/data/</b>.</div>
@@ -779,14 +780,14 @@ async function efStart(tid){
     <div class="mp">Add an entry with a value and a source for each grid feature (format in README). Moon and Mars values should come from the patch around the site, with the source named.</div>`);
   EF.on={};EF.grid.features.filter(f=>T[f.key]).forEach(f=>EF.on[f.dimension]=true);EF.sel=-1;
   focusBody('earth');
-  EF.keep=true;openPanel(`<div class="kick">Find on Earth</div><h2>${esc(S[tid].name)}</h2><div class="efback"><button class="lnk" onclick="showSite('${tid}')">← Back to ${esc(S[tid].name)}</button></div><div id="efb"></div>`);EF.keep=false;
+  EF.keep=true;openPanel(`<div class="kick">Find on Earth</div><h2>${esc(S[tid].name)}</h2><div class="efback"><button class="lnk" onclick="efBack()">← Back to ${esc(S[tid].name)}</button></div><div id="efb"></div>`);EF.keep=false;
   efUpdate();const p=EF.picks[0];if(p)efFly(p.la,p.lo)}
 function efUpdate(){efScore();efPick();if(!EF.picks.some(p=>p.i===EF.sel))EF.sel=EF.picks.length?EF.picks[0].i:-1;efPaint();efPins();efDraw()}
 function efToggle(d){EF.on[d]=!EF.on[d];efUpdate()}
 function efKnown(v){EF.hideKnown=v;efUpdate()}
 function efSel(i){EF.sel=i;efPins();efDraw();const p=EF.picks.find(p=>p.i===i);if(p)efFly(p.la,p.lo)}
 function efDraw(){
-  const g=EF.grid,T=EF.targets.targets[EF.tid],dims=[...new Set(g.features.filter(f=>T[f.key]).map(f=>f.dimension))],demo=g.demo||EF.targets.demo,
+  const g=EF.grid,T=EF.targets.targets[EF.tid],dims=[...new Set(g.features.filter(f=>T[f.key]).map(f=>f.dimension))],demo=g.demo||EF.targets.demo||(EF.tid==='pick'&&PK.demo),
     stops=[0,.2,.4,.6,.8,1].map(s=>`rgb(${efRamp(s).map(Math.round)}) ${s*100}%`).join(','),
     use=g.features.filter(f=>EF.on[f.dimension]&&T[f.key]),sp=EF.picks.find(p=>p.i===EF.sel);
   const DI={};
@@ -804,7 +805,46 @@ function efDraw(){
   ${sp?`<div class="grp">Why ${efLL(sp.la,sp.lo)}</div><div class="mh m4"><div>Feature</div><div>Target</div><div>This cell</div><div>Similarity</div></div>
   ${use.map(f=>{const v=EF.feats[f.key][EF.sel],tv=T[f.key].value,sim=v===v?1-Math.min(1,Math.abs(v-tv)/(f.scale||1)):null;return `<div class="mr m4"><div class="ml">${esc(f.label)}<small>${esc(f.dimension)}</small></div><div>${fmt(tv)} ${esc(f.unit)}</div><div>${v===v?fmt(v)+' '+esc(f.unit):'no data'}</div><div>${pct(sim)}</div></div>`}).join('')}`:''}
   <div class="note2">Each dimension counts equally; features inside one share its weight. Cells are ${g.cell_deg}° boxes, so small features are averaged away. Earth cannot reproduce gravity, vacuum or radiation, so a high score here is a lead to check, not a verdict.</div>
-  <div class="btns"><button class="pri" onclick="showSite('${EF.tid}')">Back to ${esc(S[EF.tid].name)}</button></div>`}
+  <div class="btns"><button class="pri" onclick="efBack()">Back to ${esc(S[EF.tid].name)}</button></div>`}
+
+/* ---------- Pick any point (Moon) ----------
+   Click the focused Moon anywhere. Values come from docs/data/moon_grid.json + moon_<feature>.bin (pipeline/build_body_grid.py):
+   the same features as targets.json, measured on the 111 km patch around every 1-degree point. Find on Earth then runs on
+   them exactly as for a named target (target id 'pick'). Nothing is estimated here: a missing value is shown as missing. */
+var PK={grids:{},body:null,lat:null,lon:null,T:null,pin:null},PK_BODIES=['moon'];
+async function pkLoad(body){
+  if(PK.grids[body])return PK.grids[body];
+  const get=async u=>{const r=await fetch(u,{cache:'no-cache'});if(!r.ok)throw new Error(u+' returned HTTP '+r.status);return r};
+  const m=await (await get(`data/${body}_grid.json`)).json(),v={};
+  for(const f of m.features){const b=await (await get(`data/${body}_${f.key}.bin`)).arrayBuffer();if(b.byteLength!==m.ny*m.nx*4)throw new Error(`${body}_${f.key}.bin does not match the size in ${body}_grid.json`);v[f.key]=new Float32Array(b)}
+  return PK.grids[body]={m,v}}
+function pkPin(){const v=VIS[PK.body];if(PK.pin)PK.pin.parent.remove(PK.pin);PK.pin=mkPin(v.R,ll(PK.lat,PK.lon,1).normalize(),0xffc857,true);v.mesh.add(PK.pin);PK.pin.visible=focused===PK.body}
+function pickAt(body,p){const q=VIS[body].mesh.worldToLocal(p.clone()).normalize();
+  PK.body=body;PK.lat=Math.asin(Math.max(-1,Math.min(1,q.y)))*180/Math.PI;PK.lon=Math.atan2(-q.z,q.x)*180/Math.PI;PK.T=null;pkPin();pkShow()}
+async function pkShow(){
+  const body=PK.body,bn=esc(DATA.bodies[body]?DATA.bodies[body].name:body),here=()=>$('pkb');
+  openPanel(`<div class="kick">${bn} · picked point</div><h2>${efLL(PK.lat,PK.lon)}</h2><div id="pkb"><div class="note2">Reading the ${bn} grid…</div></div>`);
+  let G;try{G=await pkLoad(body);await efLoad()}catch(e){if(here())here().innerHTML=`<div class="mp">The ${bn} grid is not built yet, so there are no values for this point.</div>
+    <div class="mp">Make it once with <b>python pipeline/build_body_grid.py</b> (README), then reload.</div><div class="note2">Details: ${esc(e.message)}</div>
+    <div class="btns"><button onclick="focusBody('${body}')">Back to ${bn}</button></div>`;return}
+  if(!here())return;
+  const m=G.m,i=Math.min(m.ny-1,Math.max(0,Math.floor((90-PK.lat)/m.cell_deg))),j=((Math.floor((PK.lon+180)/m.cell_deg)%m.nx)+m.nx)%m.nx,k=i*m.nx+j,
+    cla=90-(i+.5)*m.cell_deg,clo=-180+(j+.5)*m.cell_deg,T={};
+  m.features.forEach(f=>{const v=G.v[f.key][k];if(v===v)T[f.key]={value:v,source:f.source}});PK.T=T;PK.demo=!!m.demo;
+  const feats=EF.grid.features.filter(f=>f.dimension!=='air'),n=feats.filter(f=>T[f.key]).length,demo=m.demo||EF.grid.demo;
+  here().innerHTML=`${demo?'<div class="mock">DEMO data: the grids are made up to test the app.</div>':'<div class="realline">Real data, sources below</div>'}
+  <div class="sub" style="margin-top:6px">Values for the ${m.patch_km} km patch around the grid point nearest your click (${efLL(cla,clo)}), measured the same way as the named sites.</div>
+  <div class="grp">This point</div>
+  ${feats.map(f=>`<div class="mr one"><div class="ml">${esc(f.label)}<small>${esc(f.dimension)}</small></div><div class="mv">${T[f.key]?fmt(T[f.key].value)+' '+esc(f.unit):'<span class="na">No sourced value</span>'}</div></div>`).join('')}
+  ${n<feats.length?`<div class="note2">${feats.length-n} feature${feats.length-n>1?'s have':' has'} no sourced value here${feats.some(f=>f.dimension==='thermal'&&!T[f.key])?'. Moon surface temperature exists only where Diviner data were downloaded (about 10°S to 10°N and 80°S to 90°S)':''}. Find on Earth compares on the rest.</div>`:''}
+  <div class="btns">${n?`<button class="pri" onclick="pkFind()">Find similar places on Earth</button>`:''}<button onclick="focusBody('${body}')">Back to ${bn}</button></div>
+  <details class="wts"><summary>Sources</summary><div style="padding-bottom:8px">${[...new Set(Object.values(T).map(x=>x.source))].map(x=>`<div class="note2" style="margin:2px 0">${esc(x)}</div>`).join('')}</div></details>
+  <div class="note2">Click another point to compare it instead.</div>`}
+function pkFind(){if(!PK.T)return;S.pick={id:'pick',name:'Picked point '+efLL(PK.lat,PK.lon),body:PK.body,lat:PK.lat,lon:PK.lon,type:'target'};
+  if(!EF.targets)EF.targets={targets:{}};EF.targets.targets.pick=PK.T;efStart('pick')}
+function pkBack(){const v=VIS[PK.body],c=v.mesh.position.clone(),dir=v.mesh.localToWorld(ll(PK.lat,PK.lon,v.R)).sub(c).normalize();
+  efHide();focused=PK.body;sel=null;setMarkers();buildBar();hint.style.display='none';flyTo(c.clone().add(dir.multiplyScalar(v.R*2.7)),c,v.R*1.2);pkShow()}
+function efBack(){EF.tid==='pick'?pkBack():showSite(EF.tid)}
 
 /* ---------- Picking ---------- */
 const ray=new THREE.Raycaster(),mouse=new THREE.Vector2();let down=null;
@@ -813,7 +853,7 @@ renderer.domElement.addEventListener('pointerup',e=>{
   if(!down||Math.hypot(e.clientX-down.x,e.clientY-down.y)>6||performance.now()-down.t>500){down=null;return}down=null;
   mouse.set(e.clientX/innerWidth*2-1,-(e.clientY/innerHeight)*2+1);ray.setFromCamera(mouse,camera);
   const hit=ray.intersectObjects([...meshes,...markers.filter(m=>m.visible)],false)[0];if(!hit)return;const u=hit.object.userData;
-  if(u.kind==='site')focusBody(S[u.key].body,u.key);else if(focused!==u.id)focusBody(u.id)});
+  if(u.kind==='site')focusBody(S[u.key].body,u.key);else if(focused!==u.id)focusBody(u.id);else if(PK_BODIES.includes(u.id))pickAt(u.id,hit.point)});
 
 /* ---------- Hover, search, tour ---------- */
 renderer.domElement.addEventListener('pointermove',e=>{if(down)return;mouse.set(e.clientX/innerWidth*2-1,-(e.clientY/innerHeight)*2+1);ray.setFromCamera(mouse,camera);

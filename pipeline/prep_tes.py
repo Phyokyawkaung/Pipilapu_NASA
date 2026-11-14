@@ -8,12 +8,12 @@
 Input: tab-separated exports (.van or .van.gz) from the TES Data Tool at the ASU TES Data Node (MGS TES Standard Data
   Products, archived by the PDS Geosciences Node). Query used: the site's 111.2 km box, Observation Type = Surface,
   Time of Day = Day or Night, Clear Atmosphere and Highest Spectral Quality on. Columns needed (header line):
-  LONGITUDE_IAU2000 (deg E), LATITUDE, SOLAR_LONGITUDE (Ls, deg), LOCAL_TIME (Mars hours), TARGET_TEMPERATURE (K).
+  LONGITUDE_IAU2000 (deg E), LATITUDE, LOCAL_TIME (Mars hours), TARGET_TEMPERATURE (K); SOLAR_LONGITUDE (Ls) recommended.
 
 Method, same formulas as build_targets.py so the app treats it like the Moon and Earth values:
   only spots inside the site's 111.2 km patch are used;
-  each pass over the patch (rows sharing one SOLAR_LONGITUDE value) is averaged first, then the passes are averaged,
-  so one long pass cannot outweigh many short ones;
+  if SOLAR_LONGITUDE is exported, each pass over the patch (rows sharing one Ls value) is averaged first, then the passes,
+  so one long pass cannot outweigh many short ones; without it every spot counts equally (the source text says which);
   day and night means are converted to degC; ts_mean = (day + night) / 2, ts_range = day - night.
 Difference from Earth and Moon, written into the source text: TES crossed at about 14:00 and 02:00 local time, not 10:30 and
   22:30, and the Clear Atmosphere filter drops the dustiest season. The script prints the actual local times and Ls covered.
@@ -30,7 +30,8 @@ SITES = {  # centres must match build_targets.py
     "olympus": (18.6, -133.8),
     "valles": (-14.0, -59.0),
 }
-COLS = ("LONGITUDE_IAU2000", "LATITUDE", "SOLAR_LONGITUDE", "LOCAL_TIME", "TARGET_TEMPERATURE")
+COLS = ("LONGITUDE_IAU2000", "LATITUDE", "LOCAL_TIME", "TARGET_TEMPERATURE")  # required
+LS = "SOLAR_LONGITUDE"  # optional: without it every spot is weighted equally instead of every pass
 SRC = ("MGS TES Standard Data Products, TARGET_TEMPERATURE of surface observations with Clear Atmosphere and Highest "
        "Spectral Quality, queried with the TES Data Tool (ASU TES Data Node; archive: PDS Geosciences Node)")
 
@@ -43,16 +44,18 @@ def read(path):
         if miss:
             sys.exit(f"{os.path.basename(path)}: missing column(s) {', '.join(miss)}. Tick them in the TES Data Tool and export again.")
         ix = [head.index(c) for c in COLS]
+        il = head.index(LS) if LS in head else None
         rows = []
-        for line in f:
+        for n, line in enumerate(f):
             p = line.rstrip("\n").split("\t")
             try:
-                rows.append(tuple(float(p[i]) for i in ix))
+                lon, lat, lt, t = (float(p[i]) for i in ix)
+                rows.append((lon, lat, float(p[il]) if il is not None else float(n), lt, t))  # no Ls: each spot is its own "pass"
             except (ValueError, IndexError):
                 continue
     if not rows:
         sys.exit(f"{os.path.basename(path)}: no data rows.")
-    return rows
+    return rows, il is not None
 
 
 def in_patch(lat0, lon0, lat, lon):
@@ -65,7 +68,7 @@ def in_patch(lat0, lon0, lat, lon):
 
 def summarise(path, site, label):
     lat0, lon0 = SITES[site]
-    rows = read(path)
+    rows, has_ls = read(path)
     keep = [r for r in rows if in_patch(lat0, lon0, r[1], r[0]) and 100 < r[4] < 400]
     if not keep:
         sys.exit(f"{label}: no rows inside the {PATCH_KM} km patch around {site}. Is this the right file?")
@@ -82,11 +85,16 @@ def summarise(path, site, label):
     for x in ls:
         bins[int(x // 30) % 12] += 1
     gaps = [f"{30 * i}-{30 * i + 30}" for i, n in enumerate(bins) if n == 0]
-    print(f"  {label}: {len(keep)} of {len(rows)} spots inside the patch, {len(passes)} passes")
+    if not has_ls:
+        gaps = None
+    lons = [r[0] for r in keep]
+    print(f"  {label}: {len(keep)} of {len(rows)} spots inside the patch" + (f", {len(passes)} passes" if has_ls else ", no SOLAR_LONGITUDE column (spots weighted equally)"))
+    print(f"    longitude covered {min(lons):.2f} to {max(lons):.2f} E")
     print(f"    local time {hh(lt_lo)} to {hh(lt_hi)} (5th to 95th percentile), median {hh(lts[len(lts) // 2])}")
-    print(f"    Ls without any pass: {', '.join(gaps) or 'none'}")
-    print(f"    mean of pass means: {t:.1f} degC ({t + 273.15:.1f} K); pass means range {min(means) - 273.15:.1f} to {max(means) - 273.15:.1f} degC")
-    return dict(t=t, lt=(hh(lt_lo), hh(lt_hi)), n=len(keep), passes=len(passes), gaps=gaps)
+    if has_ls:
+        print(f"    Ls without any pass: {', '.join(gaps) or 'none'}")
+    print(f"    mean: {t:.1f} degC ({t + 273.15:.1f} K)" + (f"; pass means range {min(means) - 273.15:.1f} to {max(means) - 273.15:.1f} degC" if has_ls else ""))
+    return dict(t=t, lt=(hh(lt_lo), hh(lt_hi)), n=len(keep), passes=len(passes) if has_ls else None, gaps=gaps)
 
 
 def main():
@@ -106,12 +114,12 @@ def main():
     if d["t"] < n["t"]:
         sys.exit("day is colder than night: check that --day and --night are not swapped. Nothing written.")
     lat0, lon0 = SITES[a.site]
-    gaps = sorted(set(d["gaps"]) | set(n["gaps"]))
+    gaps = sorted(set(d["gaps"] or []) | set(n["gaps"] or []))
+    pw = lambda x: f"{x['n']} spots, {x['passes']} passes" if x["passes"] else f"{x['n']} spots, weighted equally"
     src = SRC[:-1] + f", {a.url})" if a.url else SRC
     text = (f"Measured by pipeline/prep_tes.py from {src}: mean over a {PATCH_KM} km patch centred "
-            f"{abs(lat0)}°{'N' if lat0 >= 0 else 'S'}, {abs(lon0)}°{'E' if lon0 >= 0 else 'W'}; each pass averaged first. "
-            f"Day {d['lt'][0]}-{d['lt'][1]} local time ({d['n']} spots, {d['passes']} passes), night {n['lt'][0]}-{n['lt'][1]} "
-            f"({n['n']} spots, {n['passes']} passes). mean = (day + night) / 2, swing = day - night. NOT the same local hours as "
+            f"{abs(lat0)}°{'N' if lat0 >= 0 else 'S'}, {abs(lon0)}°{'E' if lon0 >= 0 else 'W'}. "
+            f"Day {d['lt'][0]}-{d['lt'][1]} local time ({pw(d)}), night {n['lt'][0]}-{n['lt'][1]} ({pw(n)}). mean = (day + night) / 2, swing = day - night. NOT the same local hours as "
             f"Earth and Moon (10:30 and 22:30), so the swing is not like for like."
             + (f" No clear-sky passes at Ls {', '.join(gaps)} (dusty season)." if gaps else "")
             + f" Accessed {datetime.date.today().isoformat()}.")
