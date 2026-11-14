@@ -10,7 +10,6 @@
 (function () {
 'use strict';
 const CSS = `
-.pl-ban{border:1px solid var(--gold);background:none;border-radius:6px;padding:8px 10px;font-size:12px;line-height:1.45;margin:10px 0}
 .pl-in{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:8px}
 .pl-in label,.pl-asm label{display:block;font-size:11px;color:var(--mute);margin-bottom:3px}
 .pl-in input,.pl-asm input,.pl-fin{width:100%;box-sizing:border-box;padding:7px 8px;border-radius:4px;border:1px solid var(--line);background:rgba(0,0,0,.25);color:var(--text);font:inherit;font-size:13px}
@@ -39,6 +38,13 @@ const CSS = `
 .pl-need button{font:inherit;font-size:12px;color:var(--gold);background:none;border:1px solid var(--gold);border-radius:4px;padding:3px 8px;cursor:pointer}.pl-need button:hover{background:rgba(227,176,75,.1)}
 .pl-grp{border:1px solid var(--line);border-radius:6px;padding:8px 10px 10px;margin-top:8px}.pl-grp[hidden]{display:none}
 .pl-gh{display:flex;justify-content:space-between;align-items:baseline;font-size:12px}.pl-gh span{font-size:11px;color:var(--gold)}.pl-gh span.ok{color:var(--ok,#7fcf9a)}
+.pl-pres{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:10px 0 4px}
+.pl-pres label{font-size:12px;color:var(--text);font-weight:600}
+.pl-pres select{padding:5px 8px;border-radius:4px;border:1px solid var(--line);background:rgba(0,0,0,.35);color:var(--text);font:inherit;font-size:12px;cursor:pointer}
+.pl-pres select:focus{border-color:var(--acc);outline:none}
+.pl-pres-cite{font-size:11px;color:var(--mute);margin:2px 0 8px;line-height:1.4}
+.pl-pres-cite a{color:var(--acc);text-decoration:none}
+.pl-pres-cite a:hover{text-decoration:underline}
 .pl-asm small{display:block;font-size:10.5px;color:var(--mute);margin-top:3px;line-height:1.35}
 .pl-asm input:invalid{border-color:var(--bad,#ef8f7f)}
 @media(max-width:520px){.pl-in{grid-template-columns:1fr 1fr}.pl-kpi{grid-template-columns:1fr 1fr}.pl-asm{grid-template-columns:1fr}}`;
@@ -53,9 +59,9 @@ const INF = Infinity;
 const store = { get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { } } };
 
 const BP = { cfg: null, terr: {}, tid: null, site: null, T: null, c: null, roadCache: null,
-  st: { prio: 'safety', crew: '', days: '', pw: '', nuc: false, layer: 'relief', view: 'fit', a: {}, fv: {}, hab: {} } };
+  st: { prio: 'safety', preset: '', crew: '', days: '', pw: '', nuc: false, layer: 'relief', view: 'fit', a: {}, fv: {}, hab: {} } };
 window.BP = BP;
-const saveSt = () => store.set('bp-inputs', { crew: BP.st.crew, days: BP.st.days, pw: BP.st.pw, nuc: BP.st.nuc, prio: BP.st.prio, a: BP.st.a, fv: BP.st.fv });
+const saveSt = () => store.set('bp-inputs', { preset: BP.st.preset, crew: BP.st.crew, days: BP.st.days, pw: BP.st.pw, nuc: BP.st.nuc, prio: BP.st.prio, a: BP.st.a, fv: BP.st.fv });
 
 /* ---------- loading ---------- */
 async function loadCfg() {
@@ -65,7 +71,7 @@ async function loadCfg() {
   BP.cfg = await r.json();
   const saved = store.get('bp-inputs') || {};
   for (const [k, o] of Object.entries(BP.cfg.assumptions)) BP.st.a[k] = ok(o.v) ? o.v : null;  // file values (with source) first
-  Object.assign(BP.st, { crew: saved.crew ?? '', days: saved.days ?? '', pw: saved.pw ?? '', nuc: !!saved.nuc, prio: saved.prio || 'safety' });
+  Object.assign(BP.st, { preset: saved.preset || '', crew: saved.crew ?? '', days: saved.days ?? '', pw: saved.pw ?? '', nuc: !!saved.nuc, prio: saved.prio || 'safety' });
   for (const [k, v] of Object.entries(saved.a || {})) if (k in BP.st.a && ok(v)) BP.st.a[k] = v;     // then this browser's typed values
   BP.st.fv = saved.fv || {};
 }
@@ -271,7 +277,7 @@ const RULES = [
 ];
 
 /* ---------- rendering ---------- */
-BP.html = t => `<div class="tabhint">Enter mission parameters. The planner places the base on real terrain with simple rules, routes roads along the gentlest slopes, and explains each choice.</div><div id="pl-root"><div class="sub" style="margin-top:12px">Loading base planner…</div></div>`;
+BP.html = t => `<div id="pl-root"><div class="sub" style="margin-top:12px">Loading base planner…</div></div>`;
 
 BP.mount = async t => {
   const root = document.getElementById('pl-root'); if (!root) return;
@@ -287,8 +293,24 @@ BP.mount = async t => {
   if (T && (BP.st.layer === 'sun' || BP.st.layer === 'earth') && !T[BP.st.layer]) BP.st.layer = 'relief';
   const a = BP.st.a, A = BP.cfg.assumptions;
   const layers = [['relief', 'Relief'], ['slope', 'Slope'], ...(T && T.sun ? [['sun', 'Sunlight']] : []), ...(T && T.earth ? [['earth', 'Earth view']] : [])];
+  const allPresets = BP.cfg.presets || {};
+  const presets = Object.fromEntries(Object.entries(allPresets).filter(([, p]) => !p.body || p.body === BP.body));
+  if (BP.st.preset && !presets[BP.st.preset]) BP.st.preset = '';
+  const curPres = presets[BP.st.preset];
+  const presOpts = Object.entries(presets).map(([k, p]) =>
+    `<option value="${k}" ${BP.st.preset === k ? 'selected' : ''}>${E(p.name)} (${p.crew} crew · ${p.days} d · ${p.pw} kW)</option>`
+  ).join('');
+  const citeHtml = curPres ? `${E(curPres.desc)} · Source: <a class="lnk" href="${E(curPres.url)}" target="_blank" rel="noopener">${E(curPres.src)}</a>` : '';
   root.innerHTML = `
-  <div class="pl-ban"><b>Screening estimate, not a base design.</b> Facts come from the named NASA/USGS sources or say "${NS}". Design parameters are your own choices: type them below (this browser remembers them).</div>
+  <div class="pl-pres">
+    <label for="pl-preset">Mission preset</label>
+    <select id="pl-preset">
+      <option value="">Custom (your own inputs)</option>
+      ${presOpts}
+    </select>
+    ${curPres ? `<button class="lnk" id="pl-pres-reset" style="font-size:11px">Re-apply preset</button>` : ''}
+  </div>
+  <div class="pl-pres-cite" id="pl-pres-cite">${citeHtml}</div>
   <div class="pl-in">
     <div><label for="pl-crew">Crew</label><input id="pl-crew" type="number" min="1" max="50" placeholder="enter" value="${E(BP.st.crew)}"></div>
     <div><label for="pl-days">Days</label><input id="pl-days" type="number" min="1" max="3000" placeholder="enter" value="${E(BP.st.days)}"></div>
@@ -296,20 +318,50 @@ BP.mount = async t => {
   </div>
   <div class="pl-row"><div class="pl-seg" id="pl-prio">${[['safety', 'Safety'], ['science', 'Science'], ['cost', 'Low cost']].map(([k, l]) => `<button data-v="${k}" class="${BP.st.prio === k ? 'on' : ''}">${l}</button>`).join('')}</div>
     <label class="pl-chk"><input type="checkbox" id="pl-nuc" ${BP.st.nuc ? 'checked' : ''}> Allow nuclear power</label></div>
-  <details class="pl-d" id="pl-dp" ${Object.values(a).some(v => v == null) ? 'open' : ''}><summary>Design parameters (your choices, not data)</summary>
-  <div class="note2" style="margin:6px 0 2px">Type a number in each box; percentages as 0 to 100. Only what the current plan needs is listed under the results, and clicking an item there jumps to its box. The Nuclear group appears when nuclear power is allowed.</div>
-  ${paramForm(A, a)}<div class="pl-row" style="justify-content:space-between"><span class="note2" style="margin:0">Agreed team values can go into docs/data/siting.json ("assumptions") with a source, so everyone starts from them.</span><button class="lnk" id="pl-clear" style="font-size:12px">Clear my inputs</button></div></details>
+  <details class="pl-d" id="pl-dp" ${Object.values(a).some(v => v == null) ? 'open' : ''}><summary>Design parameters</summary>
+  ${paramForm(A, a)}<div class="pl-row" style="justify-content:flex-end"><button class="lnk" id="pl-clear" style="font-size:12px">Clear my inputs</button></div></details>
   <div class="pl-kpi" id="pl-kpi"></div><div class="pl-need" id="pl-need"></div>
   ${T ? `<div class="pl-row" style="justify-content:space-between;margin-bottom:6px"><div class="pl-seg" id="pl-layer">${layers.map(([k, l]) => `<button data-v="${k}" class="${BP.st.layer === k ? 'on' : ''}">${l}</button>`).join('')}</div><span><button class="lnk" id="pl-view" style="font-size:12px;margin-right:10px">${BP.st.view === 'all' ? 'Zoom to base' : 'Show whole patch'}</button><button class="lnk" id="pl-reset" style="font-size:12px;margin-right:10px">Reset habitat spot</button><button class="lnk" id="pl-png" style="font-size:12px">Save image</button></span></div>
     <div class="pl-map"><canvas id="pl-cv" aria-label="Map of the base layout on real terrain"></canvas></div><div class="pl-leg" id="pl-leg"></div><div class="pl-read" id="pl-read">Move over the map to read elevation and slope. Click to move the habitat.</div>
-    <div class="note2">${E(T.km)} × ${E(T.km)} km, ${E(T.cell_m)} m per cell. Centre: ${E(site.center_src || '')} Map up: ${E(T.up)}. Elevation: <a class="lnk" href="${E(T.dem.url)}" target="_blank" rel="noopener">${E(T.dem.name)}</a>${T.sun_src ? `. Sunlight: <a class="lnk" href="${E(T.sun_src.url)}" target="_blank" rel="noopener">${E(T.sun_src.name)}</a>` : ''}${T.earth_src ? `. Earth view: <a class="lnk" href="${E(T.earth_src.url)}" target="_blank" rel="noopener">${E(T.earth_src.name)}</a>` : ''}. Accessed ${E(T.accessed)}.</div>`
+    <div class="note2" style="margin-top:6px;display:flex;justify-content:space-between;flex-wrap:wrap"><span>${E(T.km)} × ${E(T.km)} km (${E(T.cell_m)} m/cell) · Elevation: <a class="lnk" href="${E(T.dem.url)}" target="_blank" rel="noopener">${E(T.dem.name)}</a>${T.sun_src ? ` · Sun: <a class="lnk" href="${E(T.sun_src.url)}" target="_blank" rel="noopener">${E(T.sun_src.name)}</a>` : ''}</span><span>Map up: ${E(T.up)}</span></div>`
     : `<div id="pl-svg"></div><div class="note2">Schematic only: no terrain file for this site yet. Make one with <b>python pipeline/build_site_terrain.py --site ${E(t.id)}</b>.</div>`}
   <div class="grp">Suggestions</div><ul class="pl-sug" id="pl-sug"></ul>
   <div class="grp">Site facts</div><div id="pl-facts"></div>
   <details class="pl-d"><summary>Rules used</summary><div id="pl-rules"></div></details>
   <details class="pl-d"><summary>Formulas</summary><div id="pl-form"></div></details>`;
   const on = (id, ev, fn) => { const el = document.getElementById(id); if (el) el.addEventListener(ev, fn); };
-  const chg = () => { saveSt(); BP.update(); };
+  const unpreset = () => {
+    if (BP.st.preset) {
+      BP.st.preset = '';
+      const sel = document.getElementById('pl-preset'); if (sel) sel.value = '';
+      const cEl = document.getElementById('pl-pres-cite'); if (cEl) cEl.innerHTML = '';
+      const rBtn = document.getElementById('pl-pres-reset'); if (rBtn) rBtn.remove();
+    }
+  };
+  const chg = () => { unpreset(); saveSt(); BP.update(); };
+  function applyPreset(k) {
+    const p = (BP.cfg.presets || {})[k];
+    if (!p || (p.body && p.body !== BP.body)) { unpreset(); saveSt(); BP.update(); return; }
+    BP.st.preset = k;
+    BP.st.crew = String(p.crew);
+    BP.st.days = String(p.days);
+    BP.st.pw = String(p.pw);
+    BP.st.nuc = !!p.nuc;
+    BP.st.prio = p.prio || 'safety';
+    for (const [ak, av] of Object.entries(p.a || {})) {
+      if (ak in BP.st.a) BP.st.a[ak] = av;
+    }
+    if (p.site_facts && p.site_facts[BP.tid]) {
+      BP.st.fv[BP.tid] = BP.st.fv[BP.tid] || {};
+      for (const [fk, fv] of Object.entries(p.site_facts[BP.tid])) {
+        BP.st.fv[BP.tid][fk] = fv;
+      }
+    }
+    saveSt();
+    BP.mount(t);
+  }
+  on('pl-preset', 'change', e => applyPreset(e.target.value));
+  on('pl-pres-reset', 'click', () => { if (BP.st.preset) applyPreset(BP.st.preset); });
   on('pl-crew', 'input', e => { BP.st.crew = e.target.value; chg(); });
   on('pl-days', 'input', e => { BP.st.days = e.target.value; chg(); });
   on('pl-pw', 'input', e => { BP.st.pw = e.target.value; chg(); });
@@ -317,14 +369,14 @@ BP.mount = async t => {
   root.querySelectorAll('.pl-asm input').forEach(i => i.addEventListener('input', e => { const k = e.target.dataset.k, v = parseFloat(e.target.value);
     BP.st.a[k] = isFinite(v) && v > 0 && !(PCT.has(k) && v > 100) ? (PCT.has(k) ? v / 100 : v) : null; e.target.setCustomValidity(PCT.has(k) && v > 100 ? 'Enter a percentage from 0 to 100' : ''); chg(); }));
   on('pl-clear', 'click', () => { if (!confirm('Clear the crew, days, power and design parameters you typed in this browser?')) return;
-    for (const [k, o] of Object.entries(BP.cfg.assumptions)) BP.st.a[k] = ok(o.v) ? o.v : null; Object.assign(BP.st, { crew: '', days: '', pw: '', fv: {} }); saveSt(); BP.mount(t); });
+    for (const [k, o] of Object.entries(BP.cfg.assumptions)) BP.st.a[k] = ok(o.v) ? o.v : null; Object.assign(BP.st, { preset: '', crew: '', days: '', pw: '', fv: {} }); saveSt(); BP.mount(t); });
   root.addEventListener('click', e => { const b = e.target.closest('[data-jump]'); if (b) jumpTo(b.dataset.jump); });
   root.querySelectorAll('#pl-prio button').forEach(b => b.addEventListener('click', () => { BP.st.prio = b.dataset.v; root.querySelectorAll('#pl-prio button').forEach(x => x.classList.toggle('on', x === b)); chg(); }));
   root.querySelectorAll('#pl-layer button').forEach(b => b.addEventListener('click', () => { BP.st.layer = b.dataset.v; root.querySelectorAll('#pl-layer button').forEach(x => x.classList.toggle('on', x === b)); BP.base = null; BP.update(true); }));
   on('pl-reset', 'click', () => { delete BP.st.hab[BP.tid]; BP.update(); });
   on('pl-view', 'click', e => { BP.st.view = BP.st.view === 'all' ? 'fit' : 'all'; e.target.textContent = BP.st.view === 'all' ? 'Zoom to base' : 'Show whole patch'; BP.update(true); });
   on('pl-png', 'click', savePng);
-  root.addEventListener('input', e => { if (!e.target.classList.contains('pl-fin')) return; const k = e.target.dataset.k, pc = (BP.site.facts[k] || {}).u === '', v = parseFloat(e.target.value) / (pc ? 100 : 1); (BP.st.fv[BP.tid] = BP.st.fv[BP.tid] || {})[k] = isFinite(v) && v >= 0 && !(pc && v > 1) ? v : null; saveSt(); BP.update(true); });
+  root.addEventListener('input', e => { if (!e.target.classList.contains('pl-fin')) return; const k = e.target.dataset.k, pc = (BP.site.facts[k] || {}).u === '', v = parseFloat(e.target.value) / (pc ? 100 : 1); (BP.st.fv[BP.tid] = BP.st.fv[BP.tid] || {})[k] = isFinite(v) && v >= 0 && !(pc && v > 1) ? v : null; unpreset(); saveSt(); BP.update(true); });
   const cv = document.getElementById('pl-cv');
   if (cv) {
     const cell = e => { const r = cv.getBoundingClientRect(), N = BP.T.N, v = BP.view || { i0: 0, j0: 0, n: N }, j = Math.floor(v.j0 + (e.clientX - r.left) / r.width * v.n), i = Math.floor(v.i0 + (e.clientY - r.top) / r.height * v.n); return i >= 0 && j >= 0 && i < N && j < N ? i * N + j : -1; };
@@ -357,13 +409,13 @@ BP.update = keepFacts => {
     };
     const tRows = c.L ? [['Median slope within 2.5 km of habitat', Math.round(c.L.stats.medSlope) + '°', 'From the elevation map'], ...(c.L.stats.flatShare != null ? [['Ground under ' + c.a.slope_limit + '° within 2.5 km', pctS(c.L.stats.flatShare), 'From the elevation map and your slope limit']] : []), ['Relief across the patch', sig2(c.L.stats.relief) + ' m', 'Highest minus lowest point on the elevation map']]
       .map(r => `<tr><td>${r[0]}<small>${r[2]}</small></td><td>${r[1]}</td></tr>`).join('') : '';
-    $('pl-facts').innerHTML = `<table class="pl-t">${tRows}${Object.entries(c.site.facts).map(([k, x]) => `<tr><td>${E(x.label)}<small>${E(x.src)}</small></td><td style="min-width:130px">${fval(k, x)}</td></tr>`).join('')}</table>
-      <div class="note2">Sunlight on panel while lit: ${c.I != null ? sig2(c.I) + ' W/m² ' : '– '}${c.body === 'moon' ? '(1361 W/m², NASA Moon Fact Sheet; panel turns to face the Sun)' : '(586.2 W/m², NASA Mars Fact Sheet, × 2 × cos(latitude) ÷ π × share reaching the ground)'}.</div>`;
+    const sunRow = `<tr><td>Sunlight on panel<small>${c.body === 'moon' ? 'NASA Moon Fact Sheet (1361 W/m²)' : 'NASA Mars Fact Sheet (586.2 W/m² × 2×cos(lat)/π × transmission)'}</small></td><td>${c.I != null ? sig2(c.I) + ' W/m²' : '–'}</td></tr>`;
+    $('pl-facts').innerHTML = `<table class="pl-t">${tRows}${sunRow}${Object.entries(c.site.facts).map(([k, x]) => `<tr><td>${E(x.label)}<small>${E(x.src)}</small></td><td style="min-width:130px">${fval(k, x)}</td></tr>`).join('')}</table>`;
   }
-  $('pl-rules').innerHTML = `<table class="pl-t"><tr><th>Rule</th><th>If</th><th>Then</th><th>Because</th></tr>${RULES.map(r => `<tr style="${c.out.some(o => o.id === r.id) ? '' : 'opacity:.45'}"><td>${r.id}</td><td>${E(r.if)}</td><td>${E(r.then)}</td><td>${E(r.because)}</td></tr>`).join('')}</table><div class="note2">Faded rules do not apply to the current inputs. Rules live in docs/planner.js (RULES). Placement weights, such as 1° of slope counting as 1 km of distance when picking the habitat, are planner choices and are written next to each rule in the code.</div>`;
+  $('pl-rules').innerHTML = `<table class="pl-t"><tr><th>Rule</th><th>If</th><th>Then</th><th>Because</th></tr>${RULES.map(r => `<tr style="${c.out.some(o => o.id === r.id) ? '' : 'opacity:.45'}"><td>${r.id}</td><td>${E(r.if)}</td><td>${E(r.then)}</td><td>${E(r.because)}</td></tr>`).join('')}</table>`;
   const K = BP.cfg.constants;
   $('pl-form').innerHTML = `<table class="pl-t"><tr><td>Power</td><td>P = (typed kW, or crew × kW per crew member) × margin</td></tr><tr><td>Solar array</td><td>A = P × (f + (1−f)/e) ÷ (f × I × η × (1−L))</td></tr><tr><td>Batteries</td><td>E = P × T_dark ÷ (D × e)</td></tr><tr><td>Habitat</td><td>V = crew × volume per crew member (×1.5 over 180 days)</td></tr><tr><td>Mars sunlight</td><td>I = 2 × 586.2 × cos(lat) ÷ π × share reaching the ground</td></tr><tr><td>Roads</td><td>Cheapest path from the habitat; each step costs length × (1 + (grade ÷ slope limit)²), 50× more above twice the limit</td></tr></table>
-    <div class="note2">f sunlit share, I sunlight on panel, η cell efficiency, L other losses, D depth of discharge, e round-trip efficiency. Outputs rounded to 2 significant figures. Constants: ${Object.values(K).map(k => `<a class="lnk" href="${E(k.url)}" target="_blank" rel="noopener">${E(k.src)}</a> ${k.v} ${E(k.u)}`).join(' · ')}.</div>`;
+    <div class="note2">${Object.values(K).map(k => `<a class="lnk" href="${E(k.url)}" target="_blank" rel="noopener">${E(k.src)}</a> ${k.v} ${E(k.u)}`).join(' · ')}.</div>`;
   if (c.L) drawTerrain(c); else drawSchematic(c);
 };
 
