@@ -16,6 +16,8 @@ Feature sets ("<set>"):
   terrain  terrain + landform (slope_p90, slope_median, relief, hypso). Moon and Mars.
   all      terrain + landform + surface temperature (ts_mean, ts_range). Moon only, because Mars has no global
            temperature grid. Points where LRO Diviner has no value are left empty (not scored on fewer features).
+  albedo   terrain + landform + surface albedo (MODIS on Earth, MGS TES on Mars). Mars only, because the Moon has no
+           sourced albedo map. This is what clicking a Mars point compares on.
 
 Score: exactly the website's Find on Earth rule. Per feature 1 - min(1, |gap| / scale), with the scales in grid.json;
 features share their dimension's weight; dimensions count equally; an Earth cell is used only if it has a value in
@@ -30,8 +32,9 @@ import numpy as np
 HERE = os.path.dirname(os.path.abspath(__file__))
 DATA = os.path.join(HERE, "..", "docs", "data")
 SETS = {"terrain": ["slope_p90", "slope_median", "relief", "hypso"],
-        "all": ["slope_p90", "slope_median", "relief", "hypso", "ts_mean", "ts_range"]}
-BODY_SETS = {"moon": ["terrain", "all"], "mars": ["terrain"]}
+        "all": ["slope_p90", "slope_median", "relief", "hypso", "ts_mean", "ts_range"],
+        "albedo": ["slope_p90", "slope_median", "relief", "hypso", "albedo"]}
+BODY_SETS = {"moon": ["terrain", "all"], "mars": ["terrain", "albedo"]}
 CHUNK = 256
 
 

@@ -434,13 +434,13 @@ function rebuildMarkers(){
     mk.userData={kind:'site',key:s.id,ring,lbl:lb,ph:Math.random()};mk.visible=ring.visible=false;v.mesh.add(mk);v.mesh.add(ring);markers.push(mk)}}
 
 /* ---------- Navigation ---------- */
-let BPICK=false,METH=false,focused=null,tween=null,sel=null,shift=0,shiftT=0,shiftY=0,shiftYT=0,panelMode=innerWidth>=860,panelDrag=null;
+let ABOUT=false,BPICK=false,METH=false,focused=null,tween=null,sel=null,shift=0,shiftT=0,shiftY=0,shiftYT=0,panelMode=innerWidth>=860,panelDrag=null;
 const $=id=>document.getElementById(id),bar=$('bar'),panel=$('panel'),hint=$('hint'),TOOLS=$('tools');
 function flyTo(pos,tgt,minD){tween={t0:performance.now(),dur:1500,p0:camera.position.clone(),a:controls.target.clone(),p1:pos,b:tgt,minD};controls.minDistance=Math.min(controls.minDistance,minD)}
 function setMarkers(){markers.forEach(m=>{const v=S[m.userData.key].body===focused;m.visible=m.userData.ring.visible=v;m.userData.ring.scale.setScalar(sel===m.userData.key?1.35:hov===m?1.2:1)});if(PK&&PK.pin)PK.pin.visible=PK.body===focused}
 function panelOffset(){return panel.style.display==='block'&&innerWidth>=860?panel.getBoundingClientRect().width/2+7:0}
-function openPanel(h){BPICK=METH=false;if(!EF.keep&&!GIS.keep){efHide();gisHide()}panel.className='';panel.innerHTML=`<div id="panelGrip" role="separator" tabindex="0" aria-label="Resize panel"></div><button id="x" onclick="overview()" aria-label="Close">×</button>`+h;panel.style.display='block';panel.scrollTop=0;shiftT=panelOffset();shiftYT=innerWidth<860?innerHeight*.19:0;const grip=$('panelGrip');grip.setAttribute('aria-orientation',innerWidth>=860?'vertical':'horizontal')}
-function overview(){BPICK=METH=false;gisHide();efHide();focused=sel=null;panel.style.display='none';shiftT=shiftYT=0;hint.style.display='';setMarkers();buildBar();flyTo(OV.pos.clone(),OV.tgt.clone(),2)}
+function openPanel(h){ABOUT=BPICK=METH=false;if(!EF.keep&&!GIS.keep){efHide();gisHide()}panel.className='';panel.innerHTML=`<div id="panelGrip" role="separator" tabindex="0" aria-label="Resize panel"></div><button id="x" onclick="overview()" aria-label="Close">×</button>`+h;panel.style.display='block';panel.scrollTop=0;shiftT=panelOffset();shiftYT=innerWidth<860?innerHeight*.19:0;const grip=$('panelGrip');grip.setAttribute('aria-orientation',innerWidth>=860?'vertical':'horizontal')}
+function overview(){ABOUT=BPICK=METH=false;gisHide();efHide();focused=sel=null;panel.style.display='none';shiftT=shiftYT=0;hint.style.display='';setMarkers();buildBar();flyTo(OV.pos.clone(),OV.tgt.clone(),2)}
 panel.addEventListener('pointerdown',e=>{if(e.target.id!=='panelGrip')return;e.preventDefault();const desktop=innerWidth>=860;panelDrag={id:e.pointerId,desktop,x:e.clientX,y:e.clientY,width:panel.getBoundingClientRect().width,height:panel.getBoundingClientRect().height};e.target.setPointerCapture(e.pointerId)});
 panel.addEventListener('pointermove',e=>{if(!panelDrag||panelDrag.id!==e.pointerId)return;const d=panelDrag;if(d.desktop){const max=Math.min(960,innerWidth*.8),min=Math.min(320,max);panel.style.width=Math.max(min,Math.min(max,d.width+d.x-e.clientX))+'px';shiftT=panelOffset()}else{const max=Math.min(innerHeight*.88,innerHeight-24),min=Math.min(180,max);panel.style.height=Math.max(min,Math.min(max,d.height+d.y-e.clientY))+'px'}});
 panel.addEventListener('pointerup',e=>{if(panelDrag&&panelDrag.id===e.pointerId)panelDrag=null});
@@ -463,6 +463,7 @@ function buildBar(){
   gb.onclick=()=>{if(GIS.active)overview();else gisOpen(focused&&['earth','moon','mars'].includes(focused)?focused:'earth')};
   bar.appendChild(gb);
   bar.appendChild(TOOLS);bar.insertAdjacentHTML('beforeend','<span class="sp"></span>');
+  const ab=document.createElement('button');ab.textContent='About';ab.className=ABOUT?'on':'';ab.title='What this is, who it is for and how to use it';ab.onclick=()=>showAbout();bar.appendChild(ab);
   if(window.BP){const pb=document.createElement('button');pb.textContent='Base plan';pb.className=BPICK?'on':'';pb.title='Plan a base at a Moon or Mars site';pb.onclick=()=>planPick();bar.appendChild(pb)}
   const mb=document.createElement('button');mb.textContent='Method';mb.className=METH?'on':'';mb.title='How matches are calculated, and how well the score finds known analog sites';mb.onclick=()=>showMethod();bar.appendChild(mb);
   if(DATA.meta.status!=='real'){const p=document.createElement('span');p.id='pill';p.textContent=DATA.meta.status==='missing'?'Named sites: not loaded':'Named sites: not real data';p.title=DATA.meta.title||'';bar.appendChild(p)}}
@@ -471,6 +472,29 @@ function planPick(){const tg=DATA.sites.filter(s=>s.type==='target');if(!tg.leng
   openPanel(`<div class="kick">Base plan</div><h2>Plan a base</h2><div class="sub">Pick a candidate site. The plan uses that site's real terrain map, sunlight data where it exists, and the numbers you type in. Nothing is filled in without a source.</div>
   ${['moon','mars'].map(b=>{const l=tg.filter(s=>s.body===b);return l.length?`<div class="grp">${esc(DATA.bodies[b].name)}</div>`+l.map(s=>`<button class="card" onclick="planOpen('${s.id}')"><span>${esc(s.name)}</span><b>plan</b></button>`).join(''):''}).join('')}`);
   BPICK=true;buildBar()}
+/* About: purpose, who it serves, how to use it, limits. Text only: every number in the app lives in the panels it describes. */
+function showAbout(){
+  openPanel(`<div class="kick">About</div><h2>Earth Analogs Explorer</h2>
+  <div class="sub">Which places on Earth have ground most like a chosen place on the Moon or Mars, and where does Earth have no match at all?</div>
+  <div class="grp">Purpose</div>
+  <div class="mp">Teams test rovers, landers, instruments, suits and procedures at Earth "analog" sites before a mission. Those sites are often picked by tradition or access. This tool picks them from measurements: it measures every place on Earth, the Moon and Mars the same way, from NASA, USGS and NOAA data, and ranks Earth against any point you choose.</div>
+  <div class="mp">It also shows the opposite: where Earth cannot stand in. That tells a team which tests need a vacuum chamber, a thermal chamber or a flight, not a field trip.</div>
+  <div class="grp">For scientists and engineers</div>
+  <div class="mp"><b>Find a test site.</b> Click a candidate site or any point, then <b>Find similar places on Earth</b>. You get the closest places on Earth with country and province, their rank among all of Earth, and which measurements make them alike or not.</div>
+  <div class="mp"><b>Ask one question.</b> In Find on Earth, pick a question: Rover mobility, Landing hazard or Thermal cycling. Only the measurements that matter for it are used, and the panel says whether Earth has a close analog for that question.</div>
+  <div class="mp"><b>See the limits.</b> GIS, then an Earth Analog layer, maps the best match Earth can reach for every point on the Moon or Mars.</div>
+  <div class="mp"><b>Check the method.</b> Method shows the formula, every source, and a backtest: where known analog sites rank among all of Earth.</div>
+  <div class="mp"><b>Plan a base.</b> Base plan lays out a habitat, solar field, landing pad and roads on real terrain at a candidate site, sized from your numbers or from NASA mission documents.</div>
+  <div class="grp">For students and learners</div>
+  <div class="mp">Fly between Earth, the Moon and Mars and click anywhere to see real mission data: how steep, how rough, how hot and cold, how bright. Compare a lunar crater with Antarctica or Jezero with a desert, and read why they match or don't. Every value names the mission and instrument that measured it.</div>
+  <div class="grp">How to start</div>
+  <div class="mp">1. Click <b>Moon</b> or <b>Mars</b>, then click a marker or anywhere on the surface.<br>2. Press <b>Find similar places on Earth</b>, then try a question preset.<br>3. Open <b>GIS</b> or <b>Method</b> to see the maps and how the score works.</div>
+  <div class="grp">What it cannot tell you</div>
+  <div class="mp">Earth has no matching gravity, vacuum, radiation or thin CO₂ air. A high score covers only the measured ground, averaged over squares about 111 km wide. The scales and the "close analog" cut-offs are our own choices. Where no real measurement exists, the app says "No sourced value" and never guesses.</div>
+  <div class="note2">Plain-language guide: <a class="lnk" href="PLAIN_GUIDE.md" target="_blank" rel="noopener">PLAIN_GUIDE.md</a> · Every source and processing step: <a class="lnk" href="SOURCES_AND_METHODS.md" target="_blank" rel="noopener">SOURCES_AND_METHODS.md</a></div>
+  <div class="note2">${esc(CREDITS)}</div>
+  <div class="btns"><button class="pri" onclick="overview();focusBody('moon')">Start with the Moon</button><button onclick="overview();focusBody('mars')">Start with Mars</button></div>`);
+  ABOUT=true;buildBar();try{localStorage.setItem('about-seen','1')}catch(e){}}
 function planOpen(id){TB.want='plan';focusBody(S[id].body,id)}
 function toast(m){const t=$('toast');t.textContent=m;t.style.display='block';clearTimeout(toast.h);toast.h=setTimeout(()=>t.style.display='none',6000)}
 function setData(d){const e=validate(d);if(e.length){toast('Dataset rejected:\n'+e.slice(0,6).join('\n'));return false}
@@ -884,7 +908,7 @@ async function pkShow(){
   <div class="note2">Click another point to compare it instead.</div>`;
   const E=await ebLoad(body),el=$('pkeb');if(!E||!el)return;
   const rows=Object.entries(E.layers).map(([st,L])=>{const k=ebK(E.meta,PK.lat,PK.lon),v=L.best[k];if(v!==v)return '';const i=L.cell[k];
-    return `<div class="mr one"><div class="ml">${st==='all'?'Terrain, landform and temperature':'Terrain and landform'}<small>best Earth match · ${ebEarthLL(i)}${efPN(i)?' · '+esc(efPN(i)):''}</small></div><div class="mv">${Math.round(v)}%</div></div>`}).join('');
+    return `<div class="mr one"><div class="ml">${st==='all'?'Terrain, landform and temperature':st==='albedo'?'Terrain, landform and albedo':'Terrain and landform'}<small>best Earth match · ${ebEarthLL(i)}${efPN(i)?' · '+esc(efPN(i)):''}</small></div><div class="mv">${Math.round(v)}%</div></div>`}).join('');
   if(rows)el.innerHTML=`<div class="grp">How close can Earth get?</div>${rows}<div class="note2">The best score any Earth land cell reaches for this point (pipeline/build_gap_map.py). See the Earth Analog layer under GIS for the whole ${bn}.</div>`}
 function pkFind(){if(!PK.T)return;S.pick={id:'pick',name:'Picked point '+efLL(PK.lat,PK.lon),body:PK.body,lat:PK.lat,lon:PK.lon,type:'target'};
   if(!EF.targets)EF.targets={targets:{}};EF.targets.targets.pick=PK.T;efStart('pick')}
@@ -906,6 +930,7 @@ const GIS_LAYER_INFO={
   t_range:{short:'Air Temp Range',name:'Annual air temp range',cat:'Air',unit:'°C',ramp:'swing',desc:'Annual air temperature range (warmest minus coldest month, Earth only).'},
   albedo:{short:'Albedo',name:'Surface albedo',cat:'Albedo',unit:'',ramp:'albedo',desc:'Share of sunlight the surface reflects (0 to 1). Earth: MODIS white-sky shortwave, 2025. Mars: TES bolometric albedo. No like-for-like Moon map yet.'},
   earth_best_terrain:{short:'Earth Analog',name:'Best match anywhere on Earth: terrain and landform',cat:'Analog',unit:'%',ramp:'gap',desc:'For each point, the highest Find on Earth score any Earth land cell reaches on slope, relief and landform shape. Bright = Earth has no close analog here.'},
+  earth_best_albedo:{short:'Analog + Albedo',name:'Best match anywhere on Earth: terrain, landform and albedo',cat:'Analog',unit:'%',ramp:'gap',desc:'As Earth Analog, with surface albedo added (MGS TES on Mars, MODIS on Earth). This is what clicking a Mars point compares on. Bright = Earth has no close analog here.'},
   earth_best_all:{short:'Analog + Temp',name:'Best match anywhere on Earth: terrain, landform and surface temperature',cat:'Analog',unit:'%',ramp:'gap',desc:'As Earth Analog, with LRO Diviner surface temperature added. Empty where Diviner has no value. Bright = Earth has no close analog here.'}
 };
 const GIS_RAMPS={
@@ -928,7 +953,7 @@ function gisLegendGradient(type){
 function gisAvailableLayers(body){
   if(body==='earth')return['slope_p90','slope_median','relief','hypso','ts_mean','ts_range','t_mean','t_range','albedo'];
   if(body==='moon')return['slope_p90','slope_median','relief','hypso','ts_mean','ts_range','earth_best_terrain','earth_best_all'];
-  if(body==='mars')return['slope_p90','slope_median','relief','hypso','albedo','earth_best_terrain'];
+  if(body==='mars')return['slope_p90','slope_median','relief','hypso','albedo','earth_best_terrain','earth_best_albedo'];
   return['slope_p90']}
 async function gisLoad(body){
   if(GIS.grids[body])return GIS.grids[body];
@@ -1127,7 +1152,7 @@ addEventListener('keydown',e=>{if(e.key==='Escape'){RES.style.display='none';ove
 /* ---------- Loop ---------- */
 function resize(){const desktop=innerWidth>=860;if(desktop!==panelMode){panel.style.width='';panel.style.height='';panelMode=desktop}renderer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();shiftT=panelOffset();shiftYT=panel.style.display==='block'&&!desktop?innerHeight*.19:0}
 addEventListener('resize',resize);resize();{const o=OV.pos.sub(OV.tgt);camera.position.copy(OV.tgt).addScaledVector(o,Math.min(1.35,650/o.length()))}controls.target.copy(OV.tgt);
-setData(JSON.parse(JSON.stringify(EMPTY)));loadBase();
+setData(JSON.parse(JSON.stringify(EMPTY)));loadBase().then(()=>{let seen=false;try{seen=!!localStorage.getItem('about-seen')}catch(e){}if(!seen)setTimeout(()=>{if(panel.style.display!=='block')showAbout()},1800)});
 const pv=new THREE.Vector3();
 let last=0;const cand=[];
 function place(el,x,y,w,pri,top,bot){cand.push({el,x,y,w,pri,top,bot})}
