@@ -52,6 +52,10 @@ Presets use fewer features, so scores are easier to push towards 100%. Read them
 
 **Verdict** ("Earth has a close analog"): 80% or more of the way there is "close", 60 to 80 is "partial", under 60 is "no close analog". This is our own rule of thumb.
 
+**Strong analogy / Breaks down / Use it for / Not for:** the summary under every comparison. A measurement is "strong" at 80% similarity or more, "partial" from 60 to 80%, and "breaks down" under 60%. "Use it for" names a kind of test (driving, landing approach, thermal, brightness) only when every measurement of that kind is strong. "Not for" names it when any of them breaks down. Our own rule of thumb.
+
+**Copy this report as text** (Find on Earth): copies the selected Earth place as plain text: target, place, question, match, rank, each value side by side, the summary above, the limits and the sources. Paste it into notes or a proposal.
+
 **Curated pair:** a Moon/Mars site and an Earth site that the team lists as analogs (e.g. Shackleton and Devon Island). They come from team judgment, with no citation yet.
 
 **Backtest (Method panel):** for each curated pair, where the Earth site ranks among all Earth squares. If the score is meaningful, known analogs should rank high. Pairs that rank low were chosen for reasons we don't measure (chemistry, ice, history).

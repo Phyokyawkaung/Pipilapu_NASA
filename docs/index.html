@@ -100,14 +100,7 @@ h2{margin:2px 0 2px;font-size:24px;font-weight:600}
 .wts{margin:12px 0;border:1px solid var(--line);border-radius:10px;background:var(--card);padding:0 14px}
 .wts summary{cursor:pointer;padding:11px 0;font-size:13px}
 .cu{color:var(--gold);font-size:11px;margin-left:8px}
-.wp{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
-.wp button{background:none;border:1px solid var(--line);border-radius:8px;padding:5px 10px;font-size:12px;color:var(--mute)}
-.wp button:hover{border-color:var(--acc);color:var(--acc)}
-.wg{display:grid;grid-template-columns:1fr 1fr;gap:10px 18px}
-.wg label{display:grid;grid-template-columns:1fr auto;gap:2px 8px;font-size:12px;color:var(--mute)}
-.wg input{grid-column:1/3;width:100%;accent-color:var(--acc)}.wg span{color:var(--text)}
 .note2{font-size:11px;color:var(--mute);margin:10px 0 12px;line-height:1.5}
-@media(max-width:859px){.wg{grid-template-columns:1fr}}
 .alsol{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--mute);margin:12px 0 0}
 .chip.auto{border-style:dashed}.chip.alt{opacity:.8}.chip small.uf{display:block;font:500 9.5px/1.2 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--mute)}.chip small.uf{display:inline;margin-left:-4px}
 .top{color:var(--gold);font-style:normal;font-size:11px;margin-left:6px}
@@ -148,6 +141,8 @@ h2{margin:2px 0 2px;font-size:24px;font-weight:600}
 .tg.pt{border-color:var(--gold);color:var(--gold);background:rgba(255,200,87,.08)}
 .tg.no{border-color:#ff8a80;color:#ff8a80;background:rgba(255,138,128,.08)}
 .cvr{display:flex;flex-wrap:wrap;align-items:baseline;margin:6px 0}
+.srow{padding:9px 0;border-bottom:1px solid var(--line);font-size:12px;line-height:1.5;color:var(--mute);overflow-wrap:anywhere}.srow a{color:var(--text)}
+.ana{margin:8px 0 10px}.ana .cvl{width:126px}.ana .cvr{flex-wrap:nowrap}.ana .cvr>span:last-child{font-size:13px;line-height:1.5}
 .cvl{width:112px;flex:none;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--mute)}
 /* ui refresh: hero action, tabs, category cards */
 #panel{--px:18px;--py:18px}@media(min-width:860px){#panel{--px:24px;--py:22px}}
@@ -251,8 +246,6 @@ h2{font-size:22px;font-weight:600;letter-spacing:-.01em;margin:4px 0 2px}
 .tg{border-radius:var(--r-s);font-size:11px}
 .tg.sh{background:none}
 .top,.cu{font:500 10.5px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase}
-.wp button{border-radius:var(--r-s)}
-.wp button:hover{border-color:var(--text);color:var(--text)}
 .lnk{color:var(--text);text-decoration-color:var(--mute);text-underline-offset:3px}
 .lnk:hover{text-decoration-color:var(--text)}
 a.lnk{color:var(--text)}
@@ -334,7 +327,7 @@ function compare(t,an){
       const w=wt(m);if(sim!=null&&w>0){ws+=w;sc+=w*sim}}
     rows.push({m,x,y,sim})}
   return{rows,score:an.score!=null?an.score:(ws?sc/ws:null)}}
-let WO={};const wt=m=>WO[m.key]!=null?WO[m.key]:(m.weight||0);
+const wt=m=>m.weight||0; /* weights come from the dataset only: equal per dimension, tags 0 */
 const forBody=(A,b)=>!A.analog_for||A.analog_for.includes(b),usualFor=A=>(A.analog_for||[]).map(b=>DATA.bodies[b]?DATA.bodies[b].name:b).join(' and ');
 const val=(s,k)=>s.metrics[k]?s.metrics[k].value:(k==='gravity'?DATA.bodies[s.body].gravity:null);
 const srcName=(s,k)=>{const m=s.metrics[k];return m?(DATA.sources[m.source]||{}).name||'unknown':'body data'};
@@ -491,11 +484,11 @@ function showAbout(){
   <div class="mp">1. Click <b>Moon</b> or <b>Mars</b>, then click a marker or anywhere on the surface.<br>2. Press <b>Find similar places on Earth</b>, then try a question preset.<br>3. Open <b>GIS</b> or <b>Method</b> to see the maps and how the score works.</div>
   <div class="grp">What it cannot tell you</div>
   <div class="mp">Earth has no matching gravity, vacuum, radiation or thin CO₂ air. A high score covers only the measured ground, averaged over squares about 111 km wide. The scales and the "close analog" cut-offs are our own choices. Where no real measurement exists, the app says "No sourced value" and never guesses.</div>
-  <div class="note2">Plain-language guide: <a class="lnk" href="PLAIN_GUIDE.md" target="_blank" rel="noopener">PLAIN_GUIDE.md</a> · Every source and processing step: <a class="lnk" href="SOURCES_AND_METHODS.md" target="_blank" rel="noopener">SOURCES_AND_METHODS.md</a></div>
+  <div class="note2">Read more: <a class="lnk" href="FEATURE_GUIDE.md" target="_blank" rel="noopener">every feature and term</a> · <a class="lnk" href="PLAIN_GUIDE.md" target="_blank" rel="noopener">plain-language guide</a> · <a class="lnk" href="LIMITATIONS.md" target="_blank" rel="noopener">honest limitations</a> · <a class="lnk" href="SOURCES_AND_METHODS.md" target="_blank" rel="noopener">every source and processing step</a></div>
   <div class="note2">${esc(CREDITS)}</div>
   <div class="btns"><button class="pri" onclick="overview();focusBody('moon')">Start with the Moon</button><button onclick="overview();focusBody('mars')">Start with Mars</button></div>`);
   ABOUT=true;buildBar();try{localStorage.setItem('about-seen','1')}catch(e){}}
-function planOpen(id){TB.want='plan';focusBody(S[id].body,id)}
+function planOpen(id){gisHide();efHide();TB.want='plan';focusBody(S[id].body,id)}
 function toast(m){const t=$('toast');t.textContent=m;t.style.display='block';clearTimeout(toast.h);toast.h=setTimeout(()=>t.style.display='none',6000)}
 function setData(d){const e=validate(d);if(e.length){toast('Dataset rejected:\n'+e.slice(0,6).join('\n'));return false}
   DATA=d;S={};d.sites.forEach(s=>S[s.id]=s);
@@ -521,10 +514,10 @@ function radar(t,A){
     <div class="leg"><span style="--c:var(--gold)">${t.name}</span><span style="--c:var(--acc)">${A.name}</span></div>
     <div class="note">More overlap means more alike. Axes span the dataset’s lowest to highest value.</div></div>`}
 const pct=s=>s==null?'—':Math.round(s*100)+'%',cap=s=>s[0].toUpperCase()+s.slice(1);
-const cell=(m,v,o)=>v==null?'<span class="na">—</span>':m.type==='num'?`${(+v).toLocaleString(undefined,{maximumFractionDigits:3})}<small> ${m.unit||''}</small>`:m.type==='tags'?v.map(k=>`<span class="tg${o&&o.includes(k)?' sh':''}">${k}</span>`).join(''):v;
-const coords=s=>`${s.lat.toFixed(1)}°, ${s.lon.toFixed(1)}°`;
+const cell=(m,v,o)=>v==null?'<span class="na">no sourced value</span>':m.type==='num'?fVal(v,m):m.type==='tags'?v.map(k=>`<span class="tg${o&&o.includes(k)?' sh':''}">${k}</span>`).join(''):v;
+const coords=s=>efLL(s.lat,s.lon);
 const mockBanner=()=>DATA.meta.status==='real'?'':DATA.meta.status==='missing'?'<div class="mockline">Named-site dataset not loaded</div>':'<div class="mockline">Illustrative mock data</div>';
-const head=t=>`<div class="kick">${DATA.bodies[t.body].name} · ${t.type==='target'?'candidate site':'Earth analog site'}</div><h2>${t.name}</h2><div class="sub" title="${esc(t.coord_src||'')}">${coords(t)}</div>${t.type==='target'?'':mockBanner()}`;
+const head=t=>`<div class="kick">${DATA.bodies[t.body].name} · ${t.type==='target'?'candidate site':'analog site'}</div><h2>${t.name}</h2><div class="sub" title="${esc(t.coord_src||'')}">${coords(t)}</div>${t.type==='target'?'':mockBanner()}`;
 const namedMock=()=>DATA.meta.status==='real'?'':DATA.meta.status==='missing'?'<div class="mockline">Named-site dataset not loaded</div>':'<div class="mockline">Named-site values are illustrative mock data, not measurements</div>';
 const groups=rows=>{const g=[...new Set(DATA.metrics.map(m=>m.group||'Data'))];return g.map(n=>({n,r:rows.filter(r=>(r.m.group||'Data')===n&&(r.x!=null||r.y!=null))})).filter(x=>x.r.length)};
 function showDeco(id){const v=VIS[id],o=['','1st','2nd','3rd','4th','5th','6th','7th','8th'][v.n||0];
@@ -555,13 +548,13 @@ function showSite(id,aid,asNamed){
     <div class="note2" style="text-align:center;margin:-4px 0 10px"><button class="lnk" onclick="showMethod()">How is this score calculated?</button></div>
     ${cur.a.why?`<div class="why">${cur.a.why}</div>`:''}<div class="note2" id="rk-${cur.a.id}"></div>
     ${covHTML(t,A)}`:'<div id="mvs"><div class="note2">Scoring every place on Earth…</div></div>'}
-    ${weightsHTML()}`,
+    `,
     cmpSel=`<div class="cmpsel"><label for="cmp">Compare ${t.name} with</label><select id="cmp" onchange="setCmp('${id}',this.value)">
       <optgroup label="Most similar places on Earth (real data)" id="cmp-places">${named?'<option value="p0">Most similar place on Earth</option>':`<option value="${TB.cmp}" selected>Loading…</option>`}</optgroup>
       <optgroup label="Named analog sites">${an.map(x=>`<option value="n:${x.a.id}"${named&&x===cur?' selected':''}>${x.A.name}</option>`).join('')}</optgroup></select></div>`,
-    profileH=cmpSel+(named?`${namedMock()}<div class="tabhint">How ${t.name} and ${A.name} overlap across the measurements. More overlap means more alike.</div>${radar(t,A)||'<div class="sub" style="margin-top:14px">Not enough shared numeric measurements to draw a profile.</div>'}`:'<div id="cmpb"><div class="note2">Scoring every place on Earth…</div></div>'),
-    dataH=cmpSel+(!named?'<div id="cmpb"><div class="note2">Scoring every place on Earth…</div></div>':`${namedMock()}<div class="tabhint">Side-by-side values, grouped by category. The bar shows how similar each value is.</div>${groups(cur.c.rows).map(g=>`<div class="gc">${gh(g.n)}<div class="mh"><div></div><div>${t.name}</div><div>${A.name}</div><div>Similarity</div></div>${g.r.map(r=>`<div class="mr"><div class="ml">${r.m.label}</div><div class="mv" title="${srcName(t,r.m.key)}">${cell(r.m,r.x,r.y)}</div><div class="mv" title="${srcName(A,r.m.key)}">${cell(r.m,r.y,r.x)}</div><div class="ms">${r.sim==null?'':`<div class="bar"><i style="width:${r.sim*100}%;background:hsl(${r.sim*120} 65% 52%)"></i></div><span>${Math.round(r.sim*100)}%</span>`}</div></div>`).join('')}</div>`).join('')}
-    <div class="src">Sources: ${[...new Set([...Object.values(t.metrics),...Object.values(A.metrics)].map(m=>m.source))].map(k=>(DATA.sources[k]||{}).name||k).join(' · ')}.</div>`),
+    profileH=cmpSel+(named?`${namedMock()}<div class="tabhint">How ${t.name} and ${A.name} overlap across the measurements.</div>${radar(t,A)||'<div class="sub" style="margin-top:14px">Not enough shared numeric measurements to draw a profile.</div>'}`:'<div id="cmpb"><div class="note2">Scoring every place on Earth…</div></div>'),
+    dataH=cmpSel+(!named?'<div id="cmpb"><div class="note2">Scoring every place on Earth…</div></div>':`${namedMock()}<div class="tabhint">Side-by-side values, grouped by category. The bar shows how similar each value is.</div>${groups(cur.c.rows).map(g=>`<div class="gc">${gh(g.n)}<div class="mh"><div></div><div>${t.name}</div><div>${A.name}</div><div>Similarity</div></div>${g.r.map(r=>`<div class="mr"><div class="ml">${r.m.label}</div><div class="mv" title="${srcName(t,r.m.key)}">${cell(r.m,r.x,r.y)}</div><div class="mv" title="${srcName(A,r.m.key)}">${cell(r.m,r.y,r.x)}</div><div class="ms">${r.sim==null?'':wt(r.m)<=0?'<span class="na">not scored</span>':`<div class="bar"><i style="width:${r.sim*100}%;background:hsl(${r.sim*120} 65% 52%)"></i></div><span>${Math.round(r.sim*100)}%</span>`}</div></div>`).join('')}</div>`).join('')}
+    <details class="wts"><summary>Sources</summary><div class="src" style="margin:0 0 12px">${[...new Set([...Object.values(t.metrics),...Object.values(A.metrics)].map(m=>m.source))].map(k=>esc((DATA.sources[k]||{}).name||k)).join('<br><br>')}</div></details>`),
     placeTab=(tab==='profile'||tab==='data'||tab==='match')&&!named;
     openPanel(head(t)+hero+tabsH+(tab==='plan'&&window.BP?BP.html(t):tab==='profile'?profileH:tab==='data'?dataH:matchH)+`
     <div class="btns">${placeTab?'':`<button class="pri" onclick="focusBody('earth','${A.id}')">Fly to ${A.name}</button><button onclick="focusBody('${t.body}')">Back to ${DATA.bodies[t.body].name}</button>`}</div>`);if(tab==='plan'&&window.BP)BP.mount(t);if(tab==='match'){mBest(id);if(named)rankFill(id,cur.a.id)}if(tab==='profile'||tab==='data')cmpFill(id,tab)}
@@ -573,51 +566,31 @@ function showSite(id,aid,asNamed){
     <div class="grp">Used as analog for</div>${us.map(u=>`<button class="card" onclick="focusBody('${u.s.body}','${u.s.id}','${id}')"><span>${u.s.name} · ${DATA.bodies[u.s.body].name}</span><b>${pct(u.c.score)}</b></button>`).join('')||'<div class="sub">No target uses this site yet.</div>'}
     <div class="btns"><button onclick="focusBody('earth')">Back to Earth</button></div>`)}}
 
-/* ---------- Adjustable match weights (in-memory; the dataset's own weights stay the default) ---------- */
-let CUR=null;const WS={open:false},TB={v:'match',cmp:'p0'};
+/* ---------- Site panel state ---------- */
+let CUR=null;const TB={v:'match',cmp:'p0'};
 const GI={Climate:['','Surface temperature, day and night'],'Air (Earth only)':['','Air temperature; the Moon has no air, so never scored'],Terrain:['','Slope and geology tags'],Albedo:['','Share of sunlight the surface reflects; ice is bright, basalt is dark'],Landform:['','Relief and shape of the land'],Environment:['','Gravity, air pressure and radiation']};
 const gh=n=>{const g=GI[n]||['',''];return `<div class="gh"><span class="gi">${g[0]}</span><div><b>${n}</b>${g[1]?`<small>${g[1]}</small>`:''}</div></div>`};
 function setCmp(id,v){const st=panel.scrollTop;if(v.startsWith('n:')){TB.cmp='n';showSite(id,v.slice(2))}else{TB.cmp=v;showSite(id,CUR.aid)}panel.classList.add('nf');panel.scrollTop=st}
 function setTab(v){if(!CUR)return;const st=panel.scrollTop;TB.v=v;showSite(CUR.id,CUR.aid);panel.classList.add('nf');panel.scrollTop=st}
-const PRESETS={default:()=>0,geology:m=>m.type==='tags'?5:m.weight>0?m.weight*.4:0,climate:m=>m.group==='Climate'?m.weight*2:m.type==='tags'?1:m.weight*.5,equal:m=>m.weight>0?1:0};
-const wMetrics=()=>DATA.metrics.filter(m=>m.type!=='text');
-function weightsHTML(){const custom=Object.keys(WO).length>0;
-  return `<details class="wts"${WS.open?' open':''} ontoggle="WS.open=this.open"><summary>Adjust match weights <span id="wcustom" class="cu">${custom?'custom':''}</span></summary>
-  <div class="wp">${[['default','Dataset default'],['geology','Geology first'],['climate','Climate first'],['equal','Equal']].map(([k,l])=>`<button onclick="applyPreset('${k}')">${l}</button>`).join('')}</div>
-  <div class="wg">${wMetrics().map(m=>`<label>${m.label}<span id="wv-${m.key}">${wt(m)}</span><input type="range" id="w-${m.key}" min="0" max="5" step=".25" value="${wt(m)}" oninput="setW('${m.key}',this.value)"></label>`).join('')}</div>
-  <div class="note2">0 ignores a metric. Only the match percentage changes.</div></details>`}
 function autoWhy(t,A){const a=val(t,'tags')||[],b=val(A,'tags')||[],sh=a.filter(x=>b.includes(x));return (forBody(A,t.body)?'':'Usually studied as a '+usualFor(A)+' analog, not for '+DATA.bodies[t.body].name+'. ')+'Not in the curated list; ranked automatically. '+(sh.length?'Shares: '+sh.join(', ')+'.':'Matched on measurements only.')}
-function setW(k,v){WO[k]=+v;refreshW(false)}
-function applyPreset(k){WO={};if(k!=='default')wMetrics().forEach(m=>{WO[m.key]=+PRESETS[k](m).toFixed(2)});refreshW(true)}
-function refreshW(sync){wMetrics().forEach(m=>{const s=$('w-'+m.key),l=$('wv-'+m.key);if(!s)return;if(sync)s.value=wt(m);l.textContent=wt(m)});
-  const c=$('wcustom');if(c)c.textContent=Object.keys(WO).length?'custom':'';updScores()}
-function updScores(){if(!CUR||!S[CUR.id])return;const t=S[CUR.id];let top=null;
-  document.querySelectorAll('.chip b[data-a]').forEach(b=>{const id=b.dataset.a,sc=compare(t,(t.analogs||[]).find(a=>a.id===id)||{id}).score;b.textContent=pct(sc);if(id===CUR.aid)top=sc});
-  const d=document.querySelector('.donut');if(d&&TB.cmp==='n'){d.style.setProperty('--p',Math.round((top||0)*100));d.querySelector('span').textContent=pct(top)}}
 
-/* ---------- Coverage & gaps ----------
-   Separate from the match score: for each condition, is the Earth site close enough to the target to test it?
-   Numbers: gap as a share of the metric's scale. Tags: share of the target's tags the site has. Cut-offs are our own choice (COV). */
-const COV={ok:.1,part:.35,tok:.75,tpart:.4};
+/* ---------- Where the analogy holds (named Earth sites) ----------
+   Same bands as the summary used everywhere else (anaVerdict): strong at 80% similarity or more, breaks down under 60%.
+   Only scored measurements (weight above 0) are counted. */
 function cov(t,A){const out=[];
-  for(const m of DATA.metrics){if(m.type==='text')continue;const x=val(t,m.key),y=val(A,m.key);if(x==null||y==null)continue;let f;
-    if(m.type==='num'){const d=Math.abs(x-y)/(m.scale||1);f=d<=COV.ok?1:d<=COV.part?.5:0}
-    else{if(!x.length)continue;const b=new Set(y),h=x.filter(k=>b.has(k)).length/x.length;f=h>=COV.tok?1:h>=COV.tpart?.5:0}
-    out.push({m,f})}
+  for(const m of DATA.metrics){if(m.type!=='num'||wt(m)<=0)continue;const x=val(t,m.key),y=val(A,m.key);if(x==null||y==null)continue;
+    const sim=1-Math.min(1,Math.abs(x-y)/(m.scale||1));out.push({m,f:m,sim,b:sim>=.8?1:sim>=.6?.5:0})}
   return out}
 function combo(t){const an=DATA.sites.filter(s=>s.type==='analog').map(A=>({A,c:cov(t,A)}));let best=null;
   for(let i=0;i<an.length;i++)for(let j=i+1;j<an.length;j++){const k=new Map();
-    [an[i],an[j]].forEach(z=>z.c.forEach(r=>k.set(r.m.key,Math.max(k.get(r.m.key)||0,r.f))));
+    [an[i],an[j]].forEach(z=>z.c.forEach(r=>k.set(r.m.key,Math.max(k.get(r.m.key)||0,r.b))));
     const s=[...k.values()].reduce((a,b)=>a+b,0);if(!best||s>best.s)best={a:an[i].A,b:an[j].A,s,k}}
   return best}
 function covHTML(t,A){const c=cov(t,A);if(!c.length)return '';
-  const cls={1:'ok',.5:'pt',0:'no'},g=f=>c.filter(r=>r.f===f).map(r=>`<span class="tg ${cls[f]}">${esc(r.m.label)}</span>`).join('')||'<span class="na">none</span>',
-    o=combo(t),k=o?[...o.k.entries()]:[],n=f=>k.filter(z=>z[1]===f).length,gap=k.filter(z=>z[1]===0).map(z=>esc(DATA.metrics.find(m=>m.key===z[0]).label));
-  return `<div class="grp">Coverage and gaps</div>
-  <div class="mp"><b>${esc(A.name)}</b> reproduces <b>${c.filter(r=>r.f===1).length} of ${c.length}</b> conditions of ${esc(t.name)}, and ${c.filter(r=>r.f===.5).length} partly.</div>
-  <div class="cvr"><span class="cvl">Reproduced</span><span>${g(1)}</span></div><div class="cvr"><span class="cvl">Partly</span><span>${g(.5)}</span></div><div class="cvr"><span class="cvl">Not reproduced</span><span>${g(0)}</span></div>
-  ${o?`<div class="why">Best pair of Earth sites: <b>${esc(o.a.name)}</b> + <b>${esc(o.b.name)}</b> reproduce ${n(1)} of ${k.length} conditions together (${n(.5)} partly).${gap.length?` Still unproven even with both: ${gap.join(', ')}.`:''}</div>`:''}
-  <div class="note2">Reproduced = values within ${COV.ok*100}% of the metric’s scale (partly: ${COV.part*100}%); for tags, the site has at least ${COV.tok*100}% of the target’s tags (partly: ${COV.tpart*100}%). These cut-offs are our own choice.</div>`}
+  const o=combo(t),k=o?[...o.k.entries()]:[],n=f=>k.filter(z=>z[1]===f).length,gap=k.filter(z=>z[1]===0).map(z=>esc(fName(DATA.metrics.find(m=>m.key===z[0])))),
+    miss=DATA.metrics.filter(m=>m.type==='num'&&wt(m)>0&&m.dimension!=='air'&&val(t,m.key)==null).map(fName);
+  return `<div class="grp">Where the analogy holds and where it breaks</div>${anaVerdict(c,miss)}
+  ${o?`<div class="why">Best pair of named Earth sites: <b>${esc(o.a.name)}</b> + <b>${esc(o.b.name)}</b> give a strong analogy on ${n(1)} of ${k.length} measurements between them (${n(.5)} partial).${gap.length?` Not matched even with both: ${gap.join(', ')}.`:''}</div>`:''}`}
 
 /* ---------- Method & data panel ----------
    Everything here is computed from the loaded dataset and the live weights, so it stays correct when real data replaces the mock set. */
@@ -629,7 +602,7 @@ function methodPair(){
   let b=null;DATA.sites.filter(s=>s.type==='target').forEach(s=>(s.analogs||[]).forEach(x=>{if(!S[x.id])return;const c=compare(s,x);if(!b||(c.score||0)>(b.c.score||0))b={t:s,a:x,c,pick:'highest-scoring curated pair'}}));
   return b}
 function showMethod(){
-  const P=methodPair(),M=DATA.meta||{},custom=Object.keys(WO).length>0,
+  const P=methodPair(),M=DATA.meta||{},
     all=DATA.sites.flatMap(s=>s.analogs||[]),ov=all.filter(a=>a.score!=null).length,
     zero=DATA.metrics.filter(m=>m.type==='num'&&wt(m)<=0).map(m=>esc(m.label)),
     back=sel?`showSite('${sel}'${CUR&&CUR.id===sel?`,'${CUR.aid}'`:''})`:'overview()';
@@ -639,9 +612,9 @@ function showMethod(){
       skip=rows.filter(r=>!(r.sim!=null&&wt(r.m)>0)&&r.x!=null&&r.y!=null),
       miss=rows.filter(r=>(r.x!=null||r.y!=null)&&(r.x==null||r.y==null)),
       p=v=>v<0?'('+fmt(v)+')':fmt(v),
-      line=r=>{if(r.m.type==='num')return `|${p(r.x)} − ${p(r.y)}| = ${fmt(Math.abs(r.x-r.y))}${r.m.unit?' '+esc(r.m.unit):''} · scale ${fmt(r.m.scale||1)}`;
+      line=r=>{if(r.m.type==='num')return `|${p(r.x)} − ${p(r.y)}| = ${fmt(Math.abs(r.x-r.y))}${esc(un(r.m.unit))} · scale ${fmt(r.m.scale||1)}`;
         const a=new Set(r.x),b=new Set(r.y);return `${[...a].filter(k=>b.has(k)).length} shared of ${new Set([...a,...b]).size} tags`};
-    ex=`<div class="grp">Worked example</div><div class="sub">${esc(P.t.name)} vs ${esc(S[P.a.id].name)} · ${P.pick}${custom?' · custom weights':''}</div>
+    ex=`<div class="grp">Worked example</div><div class="sub">${esc(P.t.name)} vs ${esc(S[P.a.id].name)} · ${P.pick}</div>
     ${sc.length?`<div class="mh m4" style="margin-top:8px"><div>Metric</div><div>Similarity</div><div>Max points</div><div>Earned</div></div>
     ${sc.map(r=>{const w=wt(r.m);return `<div class="mr m4"><div class="ml">${esc(r.m.label)}<small>${line(r)}</small></div><div>${pct(r.sim)}</div><div>${(w/ws*100).toFixed(1)}</div><div>${(w*r.sim/ws*100).toFixed(1)}</div></div>`}).join('')}
     <div class="mr m4"><div><b>Total</b></div><div></div><div>100</div><div><b>${(calc*100).toFixed(1)}</b></div></div>
@@ -650,15 +623,15 @@ function showMethod(){
     ${skip.length?`<div class="note2">Shown but not scored: ${skip.map(r=>esc(r.m.label)).join(', ')}.</div>`:''}
     ${miss.length?`<div class="note2">Skipped because one site has no value: ${miss.map(r=>esc(r.m.label)).join(', ')}. The other weights are rescaled.</div>`:''}
     <div class="note2">Open any comparison first, then “How is this score calculated?”, to see its numbers here.</div>`}
-  const srcs=Object.entries(DATA.sources||{}).map(([k,s])=>`<div class="mr one"><div class="ml">${esc(s.name||k)}${s.mock?' <span class="cu">mock</span>':''}${s.uncited?' <span class="cu">no citation</span>':''}</div><div class="mv">${/^https?:\/\//.test(s.url||'')?`<a class="lnk" href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.url)}</a>`:'<span class="na">no link</span>'}</div></div>`).join('');
+  const srcs=Object.entries(DATA.sources||{}).map(([k,s])=>{const u=/^https?:\/\//.test(s.url||'')?s.url:((s.name||'').match(/https?:\/\/[^\s;)]+/)||[''])[0];
+    return `<div class="srow">${esc(s.name||k)}${s.uncited?' <span class="cu">no citation</span>':''}${u?`<br><a class="lnk" href="${esc(u)}" target="_blank" rel="noopener">${esc(u)}</a>`:''}</div>`}).join('');
   openPanel(`<div class="kick">Method &amp; data</div><h2>How the match works</h2>
-  <div class="sub">A match percentage shows how alike two sites are on the measurements and geology tags in the loaded dataset. It helps you explore and rank sites. It is not a scientific verdict that one place can stand in for another.</div>
+  <div class="sub">A match percentage shows how alike two places are on the measurements listed under Sources below. It helps you explore and rank places. It is not a scientific verdict that one place can stand in for another.</div>
   <div class="grp">The rule</div>
   <div class="mp"><b>Numbers.</b> Similarity = 1 − |difference| ÷ scale, never below 0. The scale is the gap that counts as completely different; the dataset sets it for each metric.</div>
   <div class="mp"><b>Geology tags.</b> Similarity = shared tags ÷ all distinct tags across both sites.${DATA.metrics.some(m=>m.type==='tags'&&wt(m)<=0)?' The tags are curated by the team and have no citation yet, so by default they are shown but not scored (weight 0).':''}</div>
   <div class="mp"><b>Combining.</b> The match is the weighted average of these similarities. Weight 0 means a metric is shown but not scored. If either site has no value for a metric, it is skipped and the remaining weights are rescaled. “Also consider” sites are ranked with the same formula.</div>
-  <div class="mp"><b>Weights.</b> The dataset sets the defaults. The sliders and presets change them for your session only.</div>
-  <div class="mp"><b>Coverage.</b> Separate from the match score. Each condition is marked reproduced, partly or not, by how far apart the two values are compared with the metric’s scale (cut-offs ${COV.ok*100}% and ${COV.part*100}%), or for tags by the share of the target’s tags the site has (${COV.tok*100}% and ${COV.tpart*100}%). The cut-offs are our own choice.</div>
+  <div class="mp"><b>Strong, partial, breaks down.</b> Each measurement is called a strong analogy at 80% similarity or more, partial from 60% to 80%, and a breakdown under 60%. A use is suggested only when every measurement of that kind is strong. These cut-offs are our own rule of thumb.</div>
   ${ov?`<div class="mp"><b>Hand-set scores.</b> ${ov} of ${all.length} curated pairs in this dataset carry a score set by hand, which replaces the computed one.</div>`:''}
   ${ex}
   <div class="grp">Backtest: does the score find known analogs?</div><div id="valid"><div class="note2">Scoring every place on Earth…</div></div>
@@ -704,7 +677,23 @@ async function validFill(){const el=$('valid');if(!el)return;const T=DATA.sites.
   ${rows.map(x=>`<div class="mr m4"><div class="ml">${esc(x.t.name)}</div><div>${esc(x.A.name)}</div><div>${pct(compare(x.t,{id:x.A.id}).score)}</div><div>${x.r==null?'<span class="na">no grid value</span>':topTxt(x.r)}</div></div>`).join('')}
   <div class="mp">${hi} of ${ok.length} curated pairs rank in the top 25% of Earth${med!=null?`; the median pair ranks in the ${topTxt(med)}`:''}. Pairs that rank low are chosen for reasons the grid does not measure yet (such as regolith or cold), so they show what the score misses.</div>`}
 const B0=rows=>{const b=Object.values(BEST).find(x=>x&&x.land);return b?b.land.length.toLocaleString():'all'};
-const UNIT={deg:'°',degC:'°C'},un=u=>UNIT[u]||(' '+u),fmt2=v=>(+v).toLocaleString(undefined,{maximumFractionDigits:2});
+const UNIT={deg:'°',degC:'°C'},un=u=>UNIT[u]||(u?(u[0]==='°'||u==='%'?u:' '+u):''),fmt2=v=>(+v).toLocaleString(undefined,{maximumFractionDigits:2});
+/* One short name per feature everywhere (the long grid label stays as the tooltip), and one way to print a value with its unit. */
+const fName=f=>(GIS_LAYER_INFO[f.key]&&GIS_LAYER_INFO[f.key].name)||f.label,fShort=f=>(GIS_LAYER_INFO[f.key]&&GIS_LAYER_INFO[f.key].short)||f.label,fPlain=f=>fName(f).replace(/\s*\([^)]*\)$/,''),fVal=(v,f)=>(f.unit==='m'?Math.round(v).toLocaleString():fmt2(v))+un(f.unit);
+/* Where the analogy holds and where it breaks, for one Earth place. Same 80% / 60% bands as the question verdict (our own
+   rule of thumb). "Use for" comes from which whole dimension matches; it is team reasoning, the numbers come from the grids. */
+const ANA_USE={terrain:'driving and slope tests',landform:'landing approach and route planning over similar relief',thermal:'thermal tests of hardware (mean temperature and day-night swing)','day thermal':'daytime thermal tests of hardware',albedo:'tests where surface brightness matters (ice or snow against rock and soil)'};
+function anaParts(rows){const sc=rows.filter(r=>r.sim!=null),dims=[...new Set(sc.map(r=>r.f.dimension))],of=d=>sc.filter(r=>r.f.dimension===d);
+  return{hi:sc.filter(r=>r.sim>=.8),mid:sc.filter(r=>r.sim<.8&&r.sim>=.6),lo:sc.filter(r=>r.sim<.6),
+    use:dims.filter(d=>of(d).every(r=>r.sim>=.8)).map(d=>ANA_USE[d]||d),not:dims.filter(d=>of(d).some(r=>r.sim<.6)).map(d=>ANA_USE[d]||d)}}
+function anaVerdict(rows,miss){const A=anaParts(rows);if(!A.hi.length&&!A.mid.length&&!A.lo.length)return '';
+  const nm=a=>a.map(r=>`${esc(fPlain(r.f))} ${Math.round(r.sim*100)}%`).join(', ');
+  return `<div class="ana"><div class="cvr"><span class="cvl">Strong analogy</span><span>${A.hi.length?nm(A.hi):'<span class="na">none of the measured features</span>'}</span></div>
+  ${A.mid.length?`<div class="cvr"><span class="cvl">Partial</span><span>${nm(A.mid)}</span></div>`:''}
+  <div class="cvr"><span class="cvl">Breaks down</span><span>${A.lo.length?nm(A.lo):'<span class="na">none of the measured features</span>'}</span></div>
+  ${A.use.length?`<div class="cvr"><span class="cvl">Use it for</span><span>${A.use.map(esc).join('; ')}</span></div>`:''}
+  ${A.not.length?`<div class="cvr"><span class="cvl">Not for</span><span>${A.not.map(esc).join('; ')}</span></div>`:''}
+  <div class="note2">Strong = 80% or more alike, breaks down = under 60% (our own rule of thumb).${miss&&miss.length?' Not compared, no sourced value for the target: '+miss.map(esc).join(', ')+'.':''} No Earth site reproduces the low gravity, the vacuum or thin air, or the radiation.</div></div>`}
 const srcList=B=>[...new Set([...B.g.features.map(f=>f.source),...B.use.map(f=>(B.T[f.key].source||'').replace(/^Measured by pipeline\/build_targets.py from /,'').split(' (')[0])])].filter(Boolean);
 const realLine=B=>B.demo?'<div class="mock">Not real yet: docs/data/targets.json or the Earth grid is marked as demo data, so this only shows how the search works.</div>':'<div class="realline">Real data, sources below</div>';
 async function mBest(tid){
@@ -718,14 +707,14 @@ async function mBest(tid){
   if(mv)mv.innerHTML=`<div class="vs"><div class="side"><div class="kick">${DATA.bodies[t.body].name} target</div><h3>${esc(t.name)}</h3><p>${t.summary||''}</p></div>
     <div class="donut" style="--p:${Math.round(p.s*100)}"><span>${pct(p.s)}</span><small>MATCH</small></div>
     <div class="side an"><div class="kick">Earth place #${k+1}</div><h3>${efLL(p.la,p.lo)}</h3><p>${efPN(p.i)?esc(efPN(p.i))+'. ':''}${p.k?'Near '+esc(p.k.name)+'. ':''}One ${g.cell_deg}° grid cell, about ${Math.round(g.cell_deg*111)} km across, scored on ${B.use.length} measured features${rankV(B.land,p.s)!=null?`; ranks in the ${topFine(rankV(B.land,p.s))}`:''}.</p></div></div>
-    <div class="gc"><div class="mh"><div></div><div>${esc(t.name)}</div><div>${efLL(p.la,p.lo)}</div><div>Similarity</div></div>
-    ${B.use.map(f=>{const v=EF.feats[f.key][p.i],tv=B.T[f.key].value,sim=v===v?1-Math.min(1,Math.abs(v-tv)/(f.scale||1)):null;return `<div class="mr"><div class="ml">${esc(f.label)}<small>${esc(cap(f.dimension))}</small></div><div class="mv">${fmt2(tv)}<small>${un(f.unit)}</small></div><div class="mv">${v===v?fmt2(v)+`<small>${un(f.unit)}</small>`:'<span class="na">no data</span>'}</div><div class="ms">${sim==null?'<span class="na">not scored</span>':`<div class="bar"><i style="width:${sim*100}%;background:hsl(${sim*120} 65% 52%)"></i></div><span>${Math.round(sim*100)}%</span>`}</div></div>`}).join('')}</div>
-    <div class="note2">Each dimension counts equally; features inside one share its weight. The weights below apply to the named sites only.</div>
+    ${anaVerdict(B.use.map(f=>{const v=EF.feats[f.key][p.i],tv=B.T[f.key].value;return{f,sim:v===v?1-Math.min(1,Math.abs(v-tv)/(f.scale||1)):null}}),B.g.features.filter(f=>f.dimension!=='air'&&!B.T[f.key]).map(fName))}
+    <div class="note2">Every value side by side is on the <button class="lnk" onclick="setTab('data')">Data tab</button>. <button class="lnk" onclick="showMethod()">How is this score calculated?</button></div>
     <div class="btns"><button class="pri" onclick="mBestOpen('${tid}',${p.i})">Show this place on the globe</button><button onclick="focusBody('${t.body}')">Back to ${DATA.bodies[t.body].name}</button></div>`;
   b.innerHTML=`<div class="grp">Most similar places on Earth</div>${realLine(B)}
-  <div class="tabhint">Every ${g.cell_deg}° cell of Earth (about ${Math.round(g.cell_deg*111)} km) scored against ${esc(S[tid].name)} on: ${B.use.map(f=>esc(f.label)).join('; ')}.</div>
+  <div class="tabhint">Every ${g.cell_deg}° cell of Earth (about ${Math.round(g.cell_deg*111)} km) scored against ${esc(S[tid].name)} on ${B.use.map(f=>esc(fPlain(f).toLowerCase())).join(', ')}.</div>
   ${B.picks.map((p,j)=>`<button class="efr${j===k?' on':''}" onclick="setCmp('${tid}','p${j}')"><b>${j+1}</b><span>${efLL(p.la,p.lo)}${p.k?` <span class="cu">near ${esc(p.k.name)}</span>`:''}${efPNh(p.i)}</span><b>${pct(p.s)}${rkTag(B.land,p.s)}</b></button>`).join('')||'<div class="note2">No cells to rank.</div>'}
-  <div class="note2">Places at least 800 km apart. “Top x% of Earth” is the share of all ${B.land.length.toLocaleString()} scored cells that score at least as high, the same rank as the backtest. Pick one to compare it in the circle below, or open Profile and Data for more detail. Named sites below are scored the same way, on the grid cell that contains them, so with default weights the percentages are comparable. A place tagged “near” a named site is a different cell up to 500 km away, so its score can differ from that site’s own. Sources: ${srcList(B).map(esc).join(' · ')}.</div>`}
+  <div class="note2">Places at least 800 km apart. “Top x% of Earth” is the share of all ${B.land.length.toLocaleString()} scored cells that score at least as high. Pick one to compare it in the circle below. Named sites are scored the same way, on the grid cell that contains them. A place tagged “near” a named site is a different cell up to 500 km away.</div>
+  <details class="wts"><summary>Sources</summary><div style="padding-bottom:8px">${srcList(B).map(x=>`<div class="note2" style="margin:2px 0">${esc(x)}</div>`).join('')}</div></details>`}
 async function cmpFill(tid,tab){
   const B=await bestPlaces(tid);if(!CUR||CUR.id!==tid||TB.v!==tab||TB.cmp==='n')return;const box=$('cmpb'),og=$('cmp-places');if(!box)return;
   if(B.err){if(og)og.innerHTML='<option disabled selected>Not available</option>';box.innerHTML=`<div class="note2">${B.err} Meanwhile, pick a named analog site above.</div>`;return}
@@ -733,20 +722,20 @@ async function cmpFill(tid,tab){
   if(og)og.innerHTML=B.picks.map((q,j)=>`<option value="p${j}"${j===k?' selected':''}>${j+1}. ${efLL(q.la,q.lo)}${efPN(q.i)?' · '+esc(efPN(q.i)):''} · ${pct(q.s)}${q.k?' · near '+esc(q.k.name):''}</option>`).join('');
   if(!p){box.innerHTML='<div class="note2">No cells to rank.</div>';return}
   const name=efLL(p.la,p.lo),rows=B.g.features.map(f=>{const v=F[f.key][p.i],tv=T[f.key]?T[f.key].value:null;return{f,v:v===v?v:null,tv,sim:tv!=null&&v===v?1-Math.min(1,Math.abs(v-tv)/(f.scale||1)):null}});
-  const unscored=rows.filter(r=>r.tv==null).map(r=>r.f.label);
+  const unscored=rows.filter(r=>r.tv==null).map(r=>fPlain(r.f));
   const foot=`${unscored.length?`<div class="note2">Not scored: ${unscored.map(esc).join('; ')}. There is no like-for-like sourced value for ${esc(t.name)} yet, so only the Earth value is shown.</div>`:''}
-  <div class="src">Sources: ${srcList(B).map(esc).join(' · ')}. Target values: ${esc((T[B.use[0].key]||{}).source||'')}</div>
+  <details class="wts"><summary>Sources</summary><div class="src" style="margin:0 0 12px">${srcList(B).map(esc).join('<br><br>')}</div></details>
   <div class="btns"><button class="pri" onclick="mBestOpen('${tid}',${p.i})">Show this place on the globe</button><button onclick="focusBody('${t.body}')">Back to ${DATA.bodies[t.body].name}</button></div>`;
   if(tab==='data'){
     box.innerHTML=`${realLine(B)}<div class="tabhint">Measured values side by side. The bar shows how similar each value is.</div>
     <div class="gc"><div class="mh"><div></div><div>${esc(t.name)}</div><div>${name}</div><div>Similarity</div></div>
-    ${rows.map(r=>`<div class="mr"><div class="ml">${esc(r.f.label)}<small>${esc(cap(r.f.dimension))}</small></div><div class="mv">${r.tv!=null?fmt2(r.tv)+`<small>${un(r.f.unit)}</small>`:'<span class="na">no sourced value</span>'}</div><div class="mv">${r.v!=null?fmt2(r.v)+`<small>${un(r.f.unit)}</small>`:'<span class="na">no data</span>'}</div><div class="ms">${r.sim==null?'<span class="na">not scored</span>':`<div class="bar"><i style="width:${r.sim*100}%;background:hsl(${r.sim*120} 65% 52%)"></i></div><span>${Math.round(r.sim*100)}%</span>`}</div></div>`).join('')}</div>${foot}`;
+    ${rows.map(r=>`<div class="mr"><div class="ml">${esc(fName(r.f))}<small>${esc(cap(r.f.dimension))}</small></div><div class="mv">${r.tv!=null?fVal(r.tv,r.f):'<span class="na">no sourced value</span>'}</div><div class="mv">${r.v!=null?fVal(r.v,r.f):'<span class="na">no data</span>'}</div><div class="ms">${r.sim==null?'<span class="na">not scored</span>':`<div class="bar"><i style="width:${r.sim*100}%;background:hsl(${r.sim*120} 65% 52%)"></i></div><span>${Math.round(r.sim*100)}%</span>`}</div></div>`).join('')}</div>${foot}`;
   }else{
-    box.innerHTML=`${realLine(B)}<div class="tabhint">How ${esc(t.name)} and ${name} compare on each measured feature. Both bars in a row share one scale. The overall match and its rank on Earth are on the Match tab.</div>${(()=>{const q=rows.filter(r=>r.sim!=null).sort((x,y)=>y.sim-x.sim);return q.length>1?`<div class="note2">Closest on <b>${esc(q[0].f.label)}</b> (${Math.round(q[0].sim*100)}%); furthest apart on <b>${esc(q[q.length-1].f.label)}</b> (${Math.round(q[q.length-1].sim*100)}%).</div>`:''})()}
+    box.innerHTML=`${realLine(B)}<div class="tabhint">How ${esc(t.name)} and ${name} compare on each measured feature. Both bars in a row share one scale. The overall match and its rank on Earth are on the Match tab.</div>${(()=>{const q=rows.filter(r=>r.sim!=null).sort((x,y)=>y.sim-x.sim);return q.length>1?`<div class="note2">Closest on <b>${esc(fPlain(q[0].f))}</b> (${Math.round(q[0].sim*100)}%); furthest apart on <b>${esc(fPlain(q[q.length-1].f))}</b> (${Math.round(q[q.length-1].sim*100)}%).</div>`:''})()}
     ${rows.map(r=>{const mx=Math.max(Math.abs(r.tv||0),Math.abs(r.v||0),1e-9),bar=(v,c)=>v==null?'<i></i>':`<i style="width:${Math.max(2,Math.abs(v)/mx*100)}%;background:${c}"></i>`;
-      return `<div class="pb"><b>${esc(r.f.label)}</b><span class="na">${r.sim==null?'not scored':Math.round(r.sim*100)+'% similar'}</span>
-      <div class="bl"><span>${esc(t.name)}</span><div>${bar(r.tv,'var(--gold)')}</div><b>${r.tv!=null?fmt2(r.tv)+un(r.f.unit):'–'}</b></div>
-      <div class="bl"><span>${name}</span><div>${bar(r.v,'var(--acc)')}</div><b>${r.v!=null?fmt2(r.v)+un(r.f.unit):'–'}</b></div></div>`}).join('')}${foot}`;
+      return `<div class="pb"><b>${esc(fName(r.f))}</b><span class="na">${r.sim==null?'not scored':Math.round(r.sim*100)+'% similar'}</span>
+      <div class="bl"><span>${esc(t.name)}</span><div>${bar(r.tv,'var(--gold)')}</div><b>${r.tv!=null?fVal(r.tv,r.f):'–'}</b></div>
+      <div class="bl"><span>${name}</span><div>${bar(r.v,'var(--acc)')}</div><b>${r.v!=null?fVal(r.v,r.f):'–'}</b></div></div>`}).join('')}${foot}`;
   }}
 async function mBestOpen(tid,i){await efStart(tid);if(EF.picks.some(p=>p.i===i))efSel(i)}
 /* ---------- Find on Earth ----------
@@ -830,39 +819,66 @@ const EF_PRESETS=[
   {id:'rover',name:'Rover mobility',keys:['slope_p90','slope_median','relief','albedo'],why:'Wheels and traction care about how steep the ground is, both the typical slope and the steepest tenth, and how much height changes across the area. Albedo is included only to tell ice and snow (bright) from rock and soil (dark), because a wheel on ice is not a wheel on regolith. Temperature is left out.'},
   {id:'landing',name:'Landing hazard',keys:['slope_p90','relief'],why:'A lander is most threatened by the steepest ground and by large height changes within its landing ellipse, so only the steep-slope tail and local relief are used.'},
   {id:'thermal',name:'Thermal cycling',keys:['ts_mean','ts_range','ts_day','albedo'],why:'Electronics, batteries and seals are stressed by the surface temperature and its day-night swing. Albedo is included because it controls how much sunlight heats the ground. The Moon has no sourced albedo, so there it uses temperature only.'}];
+/* The question in use, which of its measurements the target has no sourced value for, and whether a thermal question has no temperature at all. */
+function efQ(){const q=EF_PRESETS.find(x=>x.id===EF.preset),T=EF.targets.targets[EF.tid]||{},alt={ts_day:['ts_mean'],ts_mean:['ts_day']};
+  return{q,miss:q?(q.keys||[]).filter(k=>!T[k]&&!(alt[k]||[]).some(x=>T[x])).map(k=>{const f=EF.grid.features.find(f=>f.key===k);return f?fPlain(f):k}):[],noT:!!q&&q.id==='thermal'&&!T.ts_mean&&!T.ts_day}}
 function efPreset(id){
   const P=EF_PRESETS.find(x=>x.id===id),T=EF.targets.targets[EF.tid]||{},fs=EF.grid.features.filter(f=>T[f.key]);
   EF.preset=id;EF.off={};EF.on={};
   fs.forEach(f=>{const inn=!P.keys||P.keys.includes(f.key);if(inn)EF.on[f.dimension]=true;else EF.off[f.key]=true});
   efUpdate()}
-function efFeat(k){EF.off[k]=!EF.off[k];EF.preset='custom';efUpdate()}
-function efToggle(d){EF.on[d]=!EF.on[d];if(EF.on[d])EF.grid.features.filter(f=>f.dimension===d).forEach(f=>{EF.off[f.key]=false});EF.preset='custom';efUpdate()}
+function efFeat(k){const fs=EF.grid.features,d=fs.find(f=>f.key===k).dimension,T=EF.targets.targets[EF.tid]||{};
+  if(!EF.on[d]){EF.on[d]=true;fs.filter(f=>f.dimension===d).forEach(f=>{EF.off[f.key]=f.key!==k})}
+  else{EF.off[k]=!EF.off[k];if(!fs.some(f=>f.dimension===d&&T[f.key]&&!EF.off[f.key]))EF.on[d]=false}
+  EF.preset='custom';efUpdate()}
 function efKnown(v){EF.hideKnown=v;efUpdate()}
+/* The measurements in use for one Earth cell, with target value, cell value and similarity (same maths as efScore). */
+function efRows(i){const T=EF.targets.targets[EF.tid]||{};return EF.grid.features.filter(f=>EF.on[f.dimension]&&T[f.key]&&!EF.off[f.key]).map(f=>{const v=EF.feats[f.key][i],tv=T[f.key].value;return{f,tv,v:v===v?v:null,sim:v===v?1-Math.min(1,Math.abs(v-tv)/(f.scale||1)):null}})}
+const efMiss=()=>{const T=EF.targets.targets[EF.tid]||{};return EF.grid.features.filter(f=>f.dimension!=='air'&&!T[f.key]).map(fName)};
+/* Plain-text report of the selected place, for notes, a paper or a message. Only what is on screen, plus the sources. */
+function efCopy(){const p=EF.picks.find(q=>q.i===EF.sel);if(!p)return;const t=S[EF.tid],rows=efRows(p.i),A=anaParts(rows),q=EF_PRESETS.find(x=>x.id===EF.preset),T=EF.targets.targets[EF.tid]||{},
+    nm=a=>a.length?a.map(r=>`${fPlain(r.f)} ${Math.round(r.sim*100)}%`).join(', '):'none of the measured features',r=rankV(EF.land,p.s),miss=efMiss(),
+    src=[...new Set([...rows.map(x=>x.f.source),...rows.map(x=>T[x.f.key].source)])].filter(Boolean);
+  const txt=['Earth Analogs Explorer: analog report','',
+    `Target: ${t.name} (${DATA.bodies[t.body].name}), ${efLL(t.lat,t.lon)}`,
+    `Earth place: ${efLL(p.la,p.lo)}${efPN(p.i)?', '+efPN(p.i):''}${p.k?' (near '+p.k.name+')':''}. One ${EF.grid.cell_deg} degree grid cell, about ${Math.round(EF.grid.cell_deg*111)} km across.`,
+    `Question: ${q?q.name:'Custom selection'}`,
+    `Match: ${pct(p.s)}${r!=null?' ('+topFine(r)+', among '+EF.land.length.toLocaleString()+' scored cells)':''}`,'',
+    'Measurement | '+t.name+' | this place | similarity',
+    ...rows.map(x=>`${fName(x.f)} | ${fVal(x.tv,x.f)} | ${x.v!=null?fVal(x.v,x.f):'no data'} | ${pct(x.sim)}`),'',
+    'Strong analogy (80% or more): '+nm(A.hi),...(A.mid.length?['Partial (60 to 80%): '+nm(A.mid)]:[]),'Breaks down (under 60%): '+nm(A.lo),
+    ...(A.use.length?['Use it for: '+A.use.join('; ')]:[]),...(A.not.length?['Not for: '+A.not.join('; ')]:[]),
+    ...(miss.length?['Not compared, no sourced value for the target: '+miss.join(', ')]:[]),'',
+    'Limits: values are averages over a square about 111 km wide. The 80% and 60% bands and the feature scales are the team\'s own choices. No Earth site reproduces the low gravity, the vacuum or thin air, or the radiation. Treat this as a lead to check, not a verdict.','',
+    'Sources:',...src.map(x=>'- '+x)].join('\n');
+  const done=()=>toast('Report copied. Paste it into your notes.'),fb=()=>{const a=document.createElement('textarea');a.value=txt;document.body.appendChild(a);a.select();try{document.execCommand('copy');done()}catch(e){toast('Copy failed. Select the table and copy it by hand.')}a.remove()};
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(txt).then(done,fb);else fb()}
 function efSel(i){EF.sel=i;efPins();efDraw();const p=EF.picks.find(p=>p.i===i);if(p)efFly(p.la,p.lo)}
 function efDraw(){
   const g=EF.grid,T=EF.targets.targets[EF.tid],dims=[...new Set(g.features.filter(f=>T[f.key]).map(f=>f.dimension))],demo=g.demo||EF.targets.demo||(EF.tid==='pick'&&PK.demo),
     stops=[0,.2,.4,.6,.8,1].map(s=>`rgb(${efRamp(s).map(Math.round)}) ${s*100}%`).join(','),
     use=g.features.filter(f=>EF.on[f.dimension]&&T[f.key]&&!EF.off[f.key]),sp=EF.picks.find(p=>p.i===EF.sel);
-  const DI={};
   $('efb').innerHTML=`${demo?'<div class="mock">DEMO data: the Earth grid and the target values are made up to test the app. Do not read anything into this map.</div>':'<div class="realline">Real data, sources under "Target values and sources"</div>'}
   <div class="sub" style="margin-top:10px">Every ${g.cell_deg}° cell of Earth (about ${Math.round(g.cell_deg*111)} km) scored against ${esc(S[EF.tid].name)}. Brighter means more similar.</div>
   <div class="efl" style="background:linear-gradient(90deg,${stops})"></div><div class="efs"><span>0%</span><span>similarity</span><span>100%</span></div>
-  <div class="note2">${EF.best==null?'Turn on at least one dimension below.':`Best cell on Earth: <b>${pct(EF.best)}</b>. Cells under about 20% are left clear.${EF.best<.6?' Earth may simply have nothing close on these dimensions.':''}`}</div>
+  <div class="note2">${EF.best==null?'Switch on at least one measurement below.':`Best cell on Earth: <b>${pct(EF.best)}</b>. Cells under about 20% are left clear.${EF.best<.6?' Earth may simply have nothing close on these dimensions.':''}`}</div>
   <div class="grp">What is the question?</div>
   <div class="needs" style="margin:6px 0 4px">${EF_PRESETS.map(q=>`<button class="need${EF.preset===q.id?' on':''}" aria-pressed="${EF.preset===q.id}" onclick="efPreset('${q.id}')">${esc(q.name)}</button>`).join('')}</div>
-  ${(()=>{const q=EF_PRESETS.find(x=>x.id===EF.preset);if(!q)return '<div class="note2">Custom selection: the measurements switched on below.</div>';const alt={ts_day:['ts_mean'],ts_mean:['ts_day'],ts_range:['ts_day']},miss=(q.keys||[]).filter(k=>!T[k]&&!(alt[k]||[]).some(x=>T[x])).map(k=>(g.features.find(f=>f.key===k)||{label:k}).label);return `<div class="note2">${esc(q.why)}</div>${miss.length?`<div class="note2">No sourced value for ${esc(S[EF.tid].name)}: ${miss.map(esc).join('; ')}. These are left out.</div>`:''}`})()}
-  ${EF.best==null?'':`<div class="mp" style="margin-top:8px"><b>${EF.best>=.8?'Earth has a close analog for this question.':EF.best>=.6?'Earth has only a partial analog for this question.':'Earth has no close analog for this question.'}</b> The best cell reaches ${pct(EF.best)}.${EF.best<.6?' Consider testing in a chamber or by simulation instead of in the field.':''} <span class="na">Bands at 80% and 60% are our own rule of thumb, not a standard.</span></div>`}
+  ${(()=>{const Q=efQ();if(!Q.q)return '<div class="note2">Custom selection: the measurements switched on below.</div>';return `<div class="note2">${esc(Q.q.why)}</div>${Q.miss.length?`<div class="note2">No sourced value for ${esc(S[EF.tid].name)}: ${Q.miss.map(esc).join('; ')}. Left out of this answer.</div>`:''}`})()}
+  ${EF.best==null?'':(Q=>Q.noT?`<div class="mp" style="margin-top:8px"><b>This question cannot be answered for this place.</b> It has no sourced surface temperature, so the map below compares albedo only. <span class="na">Mars has temperature at the three named sites only.</span></div>`:`<div class="mp" style="margin-top:8px"><b>${EF.best>=.8?'Earth has a close analog for this question.':EF.best>=.6?'Earth has only a partial analog for this question.':'Earth has no close analog for this question.'}</b> The best cell reaches ${pct(EF.best)}.${Q.miss.length?' This covers only what could be compared; '+Q.miss.map(x=>esc(x.toLowerCase())).join(' and ')+' could not.':''}${(lo=>EF.best>=.6&&lo.length?' Even the best cell breaks down on '+lo.map(r=>esc(fPlain(r.f).toLowerCase())).join(' and ')+'.':'')(EF.picks[0]?efRows(EF.picks[0].i).filter(r=>r.sim!=null&&r.sim<.6):[])}${EF.best<.6?' Consider testing in a chamber or by simulation instead of in the field.':''} <span class="na">Bands at 80% and 60% are our own rule of thumb, not a standard.</span></div>`)(efQ())}
   <div class="grp">Compare on</div>
-  <div class="needs" style="margin:6px 0 4px">${dims.map(d=>`<button class="need${EF.on[d]?' on':''}" aria-pressed="${!!EF.on[d]}" onclick="efToggle('${d}')">${esc(cap(d))}</button>`).join('')}</div>
-  <div class="needs" style="margin:2px 0 6px">${g.features.filter(f=>T[f.key]&&EF.on[f.dimension]).map(f=>`<button class="need${EF.off[f.key]?'':' on'}" aria-pressed="${!EF.off[f.key]}" title="${esc(f.label)}" onclick="efFeat('${f.key}')">${esc((GIS_LAYER_INFO[f.key]||{}).short||f.key)}</button>`).join('')}</div>
-  <details class="wts"><summary>Target values and sources</summary><div style="padding-bottom:8px">${dims.map(d=>`<div style="padding:4px 0 8px"><b style="font-size:13px">${esc(cap(d))}</b>${g.features.filter(f=>f.dimension===d&&T[f.key]).map(f=>`<div class="note2" style="margin:2px 0">${esc(f.label)}: target ${fmt(T[f.key].value)} ${esc(f.unit)} · ${esc(T[f.key].source||'no source')}</div>`).join('')}</div>`).join('')}</div></details>
+  <div class="needs" style="margin:6px 0 6px">${g.features.filter(f=>T[f.key]).map(f=>{const on=EF.on[f.dimension]&&!EF.off[f.key];return `<button class="need${on?' on':''}" aria-pressed="${!!on}" title="${esc(f.label)} · group: ${esc(f.dimension)}" onclick="efFeat('${f.key}')">${esc(fShort(f))}</button>`}).join('')}</div>
+  <div class="note2">Switch single measurements on or off. Measurements in the same group (${dims.map(d=>esc(cap(d))).join(', ')}) share that group's weight.</div>
+  <details class="wts"><summary>Target values and sources</summary><div style="padding-bottom:8px">${dims.map(d=>`<div style="padding:4px 0 8px"><b style="font-size:13px">${esc(cap(d))}</b>${g.features.filter(f=>f.dimension===d&&T[f.key]).map(f=>`<div class="note2" style="margin:2px 0">${esc(f.label)}: target ${fVal(T[f.key].value,f)} · ${esc(T[f.key].source||'no source')}</div>`).join('')}</div>`).join('')}</div></details>
   <div class="grp">Best distinct places</div>
   ${EF.picks.map((p,k)=>`<button class="efr${p.i===EF.sel?' on':''}" onclick="efSel(${p.i})"><b>${k+1}</b><span>${efLL(p.la,p.lo)}${p.k?` <span class="cu">near ${esc(p.k.name)}</span>`:''}${efPNh(p.i)}</span><b>${pct(p.s)}${rkTag(EF.land,p.s)}</b></button>`).join('')||'<div class="note2">No cells to rank.</div>'}
   <div class="note2">Places at least 800 km apart, so one region does not fill the list. “Top x% of Earth” is the share of all ${(EF.land||[]).length.toLocaleString()} cells scored on the dimensions switched on that score at least as high. Hiding known places does not change it.</div>
   <label class="ck"><input type="checkbox" ${EF.hideKnown?'checked':''} onchange="efKnown(this.checked)"><span>Hide places we already know<small>within 500 km of our Earth analog sites; tagged “near …” when shown</small></span></label>
-  ${sp?`<div class="grp">Why ${efLL(sp.la,sp.lo)}${efPN(sp.i)?' · '+esc(efPN(sp.i)):''}</div><div class="mh m4"><div>Feature</div><div>Target</div><div>This cell</div><div>Similarity</div></div>
-  ${use.map(f=>{const v=EF.feats[f.key][EF.sel],tv=T[f.key].value,sim=v===v?1-Math.min(1,Math.abs(v-tv)/(f.scale||1)):null;return `<div class="mr m4"><div class="ml">${esc(f.label)}<small>${esc(f.dimension)}</small></div><div>${fmt(tv)} ${esc(f.unit)}</div><div>${v===v?fmt(v)+' '+esc(f.unit):'no data'}</div><div>${pct(sim)}</div></div>`}).join('')}`:''}
-  <div class="note2">Each dimension counts equally; features inside one share its weight. Cells are ${g.cell_deg}° boxes, so small features are averaged away. Earth cannot reproduce gravity, vacuum or radiation, so a high score here is a lead to check, not a verdict.</div>
+  ${sp?`<div class="grp">Why ${efLL(sp.la,sp.lo)}${efPN(sp.i)?' · '+esc(efPN(sp.i)):''}</div>${anaVerdict(efRows(sp.i),efMiss())}
+  <div class="mh m4"><div>Measurement</div><div>${esc(S[EF.tid].name)}</div><div>This place</div><div>Similarity</div></div>
+  ${efRows(sp.i).map(r=>`<div class="mr m4"><div class="ml" title="${esc(r.f.label)}">${esc(fName(r.f))}<small>${esc(cap(r.f.dimension))}</small></div><div>${fVal(r.tv,r.f)}</div><div>${r.v!=null?fVal(r.v,r.f):'no data'}</div><div>${pct(r.sim)}</div></div>`).join('')}
+  <div class="btns" style="margin-top:10px"><button onclick="efCopy()">Copy this report as text</button></div>`:''}
+  <div class="note2">Each dimension counts equally; features inside one share its weight. Cells are ${g.cell_deg}° boxes, so small features are averaged away. A high score is a lead to check, not a verdict.</div>
   <div class="btns"><button class="pri" onclick="efBack()">Back to ${esc(S[EF.tid].name)}</button></div>`}
 
 /* ---------- Pick any point (Moon, Mars) ----------
@@ -900,16 +916,34 @@ async function pkShow(){
   here().innerHTML=`${demo?'<div class="mock">DEMO data: the grids are made up to test the app.</div>':'<div class="realline">Real data, sources below</div>'}
   <div class="sub" style="margin-top:6px">Values for the ${m.patch_km} km patch around the grid point nearest your click (${efLL(cla,clo)}), measured the same way as the named sites.</div>
   <div class="grp">This point</div>
-  ${feats.map(f=>`<div class="mr one"><div class="ml">${esc(f.label)}<small>${esc(f.dimension)}</small></div><div class="mv">${T[f.key]?fmt(T[f.key].value)+' '+esc(f.unit):'<span class="na">No sourced value</span>'}</div></div>`).join('')}
+  ${feats.map(f=>`<div class="mr one"><div class="ml" title="${esc(f.label)}">${esc(fName(f))}<small>${esc(cap(f.dimension))}</small></div><div class="mv">${T[f.key]?fVal(T[f.key].value,f):'<span class="na">No sourced value</span>'}</div></div>`).join('')}
   ${n<feats.length?`<div class="note2">${feats.length-n} feature${feats.length-n>1?'s have':' has'} no sourced value here${info.note&&feats.some(f=>/thermal/.test(f.dimension)&&!T[f.key])?'. '+esc(info.note):''}. Find on Earth compares on the rest.</div>`:''}
-  <div id="pkeb"></div>
+  <div id="pkeb"><div class="note2">Checking how close Earth can get…</div></div>
   <div class="btns">${n?`<button class="pri" onclick="pkFind()">Find similar places on Earth</button>`:''}<button onclick="focusBody('${body}')">Back to ${bn}</button></div>
   <details class="wts"><summary>Sources</summary><div style="padding-bottom:8px">${[...new Set(Object.values(T).map(x=>x.source))].map(x=>`<div class="note2" style="margin:2px 0">${esc(x)}</div>`).join('')}</div></details>
   <div class="note2">Click another point to compare it instead.</div>`;
-  const E=await ebLoad(body),el=$('pkeb');if(!E||!el)return;
+  const E=await ebLoad(body),el=$('pkeb');if(!el)return;if(!E){el.innerHTML='';return}
   const rows=Object.entries(E.layers).map(([st,L])=>{const k=ebK(E.meta,PK.lat,PK.lon),v=L.best[k];if(v!==v)return '';const i=L.cell[k];
     return `<div class="mr one"><div class="ml">${st==='all'?'Terrain, landform and temperature':st==='albedo'?'Terrain, landform and albedo':'Terrain and landform'}<small>best Earth match · ${ebEarthLL(i)}${efPN(i)?' · '+esc(efPN(i)):''}</small></div><div class="mv">${Math.round(v)}%</div></div>`}).join('');
-  if(rows)el.innerHTML=`<div class="grp">How close can Earth get?</div>${rows}<div class="note2">The best score any Earth land cell reaches for this point (pipeline/build_gap_map.py). See the Earth Analog layer under GIS for the whole ${bn}.</div>`}
+  const kk=ebK(E.meta,PK.lat,PK.lon),why=Object.entries(E.layers).reverse().map(([st,L])=>ebWhy(L,kk,st)).find(x=>x)||'';
+  el.innerHTML=!rows?'':`<div class="grp">How close can Earth get?</div>${rows}<div class="note2">The best score any Earth land cell reaches for this point (pipeline/build_gap_map.py). See the Earth Analog layers under GIS for all of ${esc(theB(body))}.</div>${why}`}
+/* "Why this score": for the best Earth cell of a gap-map layer, each measurement side by side with Earth's whole range,
+   and a sentence naming what holds the score down. Every number is read from the grids; nothing is estimated. */
+const EBR={};
+function ebRange(key){if(EBR[key])return EBR[key];const a=EF.feats[key];let lo=Infinity,hi=-Infinity;for(let i=0;i<a.length;i++){const v=a[i];if(v===v){if(v<lo)lo=v;if(v>hi)hi=v}}return EBR[key]={lo,hi}}
+function ebWhy(L,k,st){
+  const v=L.best[k];if(v!==v||!EF.grid||!EF.feats)return '';const i=L.cell[k],T=PK.T||{};
+  const fs=L.meta.features.map(key=>EF.grid.features.find(f=>f.key===key)).filter(f=>f&&T[f.key]&&EF.feats[f.key]);if(!fs.length)return '';
+  const rows=fs.map(f=>{const h=T[f.key].value,e=EF.feats[f.key][i],r=ebRange(f.key),sim=e===e?1-Math.min(1,Math.abs(h-e)/(f.scale||1)):null,out=h>r.hi?'above':h<r.lo?'below':'';return {f,h,e,r,sim,out}});
+  const worst=rows.filter(x=>x.sim!=null).sort((a,b)=>a.sim-b.sim)[0],val=fVal;
+  const outs=rows.filter(x=>x.out);
+  let say;
+  if(outs.length)say=outs.map(x=>`<b>${esc(fPlain(x.f))}</b> here is ${val(x.h,x.f)}. The ${x.out==='above'?'highest':'lowest'} value on any Earth land cell is ${val(x.out==='above'?x.r.hi:x.r.lo,x.f)}, so Earth has nothing like this.`).join(' ')+` That is what holds the best match to ${Math.round(v)}%.`;
+  else if(worst&&worst.sim<.9)say=`Earth has values in this range, but not all together in one place. The best cell is furthest off on <b>${esc(fPlain(worst.f))}</b>: ${val(worst.h,worst.f)} here, ${val(worst.e,worst.f)} there, ${Math.round(worst.sim*100)}% alike. That holds the match to ${Math.round(v)}%.`;
+  else say=`Every measurement here is inside Earth's range, and one Earth cell has them all close together, so the match is ${Math.round(v)}%.`;
+  return `<div class="grp">Why this score? ${st==='all'?'Terrain, landform and temperature':st==='albedo'?'Terrain, landform and albedo':'Terrain and landform'}, ${Math.round(v)}%</div><div class="mp">${say}</div>
+  ${rows.map(x=>`<div class="mr one"><div class="ml">${esc(fName(x.f))}<small>here ${val(x.h,x.f)} · best Earth cell ${x.e===x.e?val(x.e,x.f):'no value'} · Earth range ${val(x.r.lo,x.f)} to ${val(x.r.hi,x.f)}${x.out?' · <b>outside Earth\'s range</b>':''}</small></div><div class="mv">${x.sim==null?'–':Math.round(x.sim*100)+'%'}</div></div>`).join('')}
+  <div class="note2">Per measurement: 1 − difference ÷ scale. Measurements in the same group share its weight; groups count equally. Scored on: ${fs.map(f=>esc(fPlain(f).toLowerCase())).join(', ')}. The best cell is ${ebEarthLL(i)}${efPN(i)?' ('+esc(efPN(i))+')':''}.</div>`}
 function pkFind(){if(!PK.T)return;S.pick={id:'pick',name:'Picked point '+efLL(PK.lat,PK.lon),body:PK.body,lat:PK.lat,lon:PK.lon,type:'target'};
   if(!EF.targets)EF.targets={targets:{}};EF.targets.targets.pick=PK.T;efStart('pick')}
 function pkBack(){const v=VIS[PK.body],c=v.mesh.position.clone(),dir=v.mesh.localToWorld(ll(PK.lat,PK.lon,v.R)).sub(c).normalize();
@@ -923,9 +957,10 @@ const GIS_LAYER_INFO={
   slope_p90:{short:'Steep Slope',name:'Steep slope (90th percentile)',cat:'Terrain',unit:'°',ramp:'terrain',desc:'Slope exceeded by only 10% of local terrain points; highlights steep cliffs and crater rims.'},
   slope_median:{short:'Typical Slope',name:'Typical slope (median)',cat:'Terrain',unit:'°',ramp:'terrain',desc:'Median local slope; indicates general ground traversability.'},
   relief:{short:'Local Relief',name:'Local relief (P95 − P5)',cat:'Landform',unit:'m',ramp:'relief',desc:'Elevation difference between 95th and 5th percentiles within each 111 km patch.'},
-  hypso:{short:'Hypsometry',name:'Hypsometric integral',cat:'Landform',unit:'index',ramp:'hypso',desc:'Landform morphology (0–1): low = plains with isolated peaks; high = elevated plateau.'},
+  hypso:{short:'Landform Shape',name:'Landform shape (hypsometric integral)',cat:'Landform',unit:'index',ramp:'hypso',desc:'Landform morphology (0–1): low = plains with isolated peaks; high = elevated plateau.'},
   ts_mean:{short:'Surface Temp',name:'Mean surface temperature',cat:'Thermal',unit:'°C',ramp:'temp',desc:'Mean skin temperature averaged over day and night observations.'},
   ts_range:{short:'Temp Swing',name:'Day-night temp swing',cat:'Thermal',unit:'°C',ramp:'swing',desc:'Thermal range between local daytime and nighttime surface temperatures.'},
+  ts_day:{short:'Day Temp',name:'Daytime surface temperature',cat:'Thermal',unit:'°C',ramp:'temp',desc:'Daytime skin temperature. Earth: MODIS, about 10:30 local time. Mars: MGS TES, three named sites only.'},
   t_mean:{short:'Air Temp (2m)',name:'Mean air temperature (2 m)',cat:'Air',unit:'°C',ramp:'temp',desc:'2-meter ambient air temperature for bioclimatic context (Earth only).'},
   t_range:{short:'Air Temp Range',name:'Annual air temp range',cat:'Air',unit:'°C',ramp:'swing',desc:'Annual air temperature range (warmest minus coldest month, Earth only).'},
   albedo:{short:'Albedo',name:'Surface albedo',cat:'Albedo',unit:'',ramp:'albedo',desc:'Share of sunlight the surface reflects (0 to 1). Earth: MODIS white-sky shortwave, 2025. Mars: TES bolometric albedo. No like-for-like Moon map yet.'},
@@ -969,7 +1004,7 @@ async function gisLoad(body){
   return GIS.grids[body]={m,v}}
 /* "Where Earth has no analog": for every Moon/Mars point, the best Find on Earth score any Earth cell reaches, and which cell.
    Made by pipeline/build_gap_map.py (docs/data/<body>_earthbest.json + _earthbest_<set>[_cell].bin). Missing files = layer hidden. */
-const EB={};
+const EB={},theB=b=>b==='moon'?'the Moon':DATA.bodies[b]?DATA.bodies[b].name:b;
 async function ebLoad(body){if(body in EB)return EB[body];try{
   const get=async u=>{const r=await fetch(u,{cache:'no-cache'});if(!r.ok)throw new Error(u+' returned HTTP '+r.status);return r},meta=await (await get(`data/${body}_earthbest.json`)).json(),layers={};
   for(const st in meta.layers){const n=meta.ny*meta.nx,a=new Float32Array(await (await get(`data/${body}_earthbest_${st}.bin`)).arrayBuffer()),c=new Float32Array(await (await get(`data/${body}_earthbest_${st}_cell.bin`)).arrayBuffer());
@@ -978,7 +1013,7 @@ async function ebLoad(body){if(body in EB)return EB[body];try{
 const ebK=(m,lat,lon)=>Math.min(m.ny-1,Math.max(0,Math.floor((90-lat)/m.cell_deg)))*m.nx+((Math.floor((lon+180)/m.cell_deg)%m.nx)+m.nx)%m.nx;
 const ebEarthLL=i=>efLL(90-(Math.floor(i/360)+.5),-180+(i%360+.5));
 function ebSummary(body,st){const E=EB[body],L=E&&E.layers[st];if(!L)return '';const s=L.meta.summary,bn=DATA.bodies[body]?DATA.bodies[body].name:body;
-  return `<div class="note2" style="margin-top:8px">Scored ${s.points.toLocaleString()} ${esc(bn)} points against ${s.earth_cells.toLocaleString()} Earth land cells. Earth reaches 80% or more over <b>${s.area_ge_80}%</b> of ${esc(bn)} by area and stays under 50% over <b>${s.area_lt_50}%</b>; median best match ${s.median}%, lowest ${s.min}%.</div>`}
+  return `<div class="note2" style="margin-top:8px">Scored ${s.points.toLocaleString()} ${esc(bn)} points against ${s.earth_cells.toLocaleString()} Earth land cells. Earth reaches 80% or more over <b>${s.area_ge_80}%</b> of ${esc(theB(body))} by area and stays under 50% over <b>${s.area_lt_50}%</b>; median best match ${s.median}%, lowest ${s.min}%.</div>`}
 function gisPaint(body,layerKey,arr,min,max){
   const v=VIS[body];
   if(!GIS.cvs[body]){
@@ -1072,11 +1107,11 @@ function gisRenderPanel(){
         <span style="font-size:11px;color:var(--mute)">cell ${efLL(p.cla,p.clo)}</span>
       </div>
       <div style="margin-top:6px;font-size:15px;font-weight:600;font-variant-numeric:tabular-nums;color:var(--text)">
-        ${esc(activeInfo.short)}: <span style="color:${body==='earth'?'var(--acc)':'var(--gold)'}">${activeV!=null?fmt(activeV)+' '+esc(activeInfo.unit):'No data'}</span>
+        ${esc(activeInfo.short)}: <span style="color:${body==='earth'?'var(--acc)':'var(--gold)'}">${activeV!=null?fmt2(activeV)+esc(un(activeInfo.unit)):'No data'}</span>
       </div>
       ${GIS.layer.startsWith('earth_best_')&&p.vals[GIS.layer]!=null&&GIS.grids[body].v[GIS.layer+'_cell']?(()=>{const i=GIS.grids[body].v[GIS.layer+'_cell'][p.k];return `<div class="note2" style="margin-top:4px">Closest Earth place: <b>${ebEarthLL(i)}</b>${efPN(i)?' · '+esc(efPN(i)):''}</div><div class="btns" style="margin-top:6px"><button onclick="ebOpen('${body}',${p.lat},${p.lon})">Compare this point on Earth</button></div>`})():''}
       <details class="wts" style="margin-top:6px"><summary>All layers at this cell</summary>
-        <div style="padding-top:4px">${avail.map(k=>{const v=p.vals[k],li=GIS_LAYER_INFO[k]||{};return `<div class="mr one" style="padding:2px 0"><div class="ml">${esc(li.short||k)}</div><div class="mv">${v!=null?fmt(v)+' '+esc(li.unit):'no data'}</div></div>`}).join('')}</div>
+        <div style="padding-top:4px">${avail.map(k=>{const v=p.vals[k],li=GIS_LAYER_INFO[k]||{};return `<div class="mr one" style="padding:2px 0"><div class="ml">${esc(li.short||k)}</div><div class="mv">${v!=null?fmt2(v)+esc(un(li.unit)):'no data'}</div></div>`}).join('')}</div>
       </details>
     </div>`}
   else{probeHtml='<div class="note2" style="margin:6px 0 10px">Click anywhere on the globe to inspect coordinates and real values.</div>'}
@@ -1096,11 +1131,11 @@ function gisRenderPanel(){
       <div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:13.5px;color:var(--text)">${esc(activeInfo.name)}</b><span style="font:500 11px var(--mono);color:var(--acc)">${esc(activeInfo.unit)}</span></div>
       <div class="sub" style="margin:3px 0 8px;font-size:11.5px">${esc(activeInfo.desc)}</div>
       <div class="efl" style="background:${gisLegendGradient(rampType)}"></div>
-      <div class="efs"><span>${range?fmt(range.min)+' '+esc(activeInfo.unit):'…'}</span><span>median: ${range?fmt(range.median)+' '+esc(activeInfo.unit):'…'}</span><span>${range?fmt(range.max)+' '+esc(activeInfo.unit):'…'}</span></div>
+      <div class="efs"><span>${range?fmt2(range.min)+esc(un(activeInfo.unit)):'…'}</span><span>median: ${range?fmt2(range.median)+esc(un(activeInfo.unit)):'…'}</span><span>${range?fmt2(range.max)+esc(un(activeInfo.unit)):'…'}</span></div>
       ${GIS.layer.startsWith('earth_best_')?ebSummary(body,GIS.layer.slice(11))+'<div class="note2">Earth cannot reproduce gravity, vacuum, the thin Mars air or radiation in any case; this map only covers what the grids measure, at 1° (about 111 km on Earth).</div>':''}
     </div>
     <div style="display:flex;align-items:center;justify-content:space-between;margin:10px 0 4px">
-      <span style="font:500 11px var(--mono);color:var(--mute);text-transform:uppercase;letter-spacing:.06em">Blend: <span id="gis-op-val" style="color:var(--text)">${Math.round(GIS.opacity*100)}%</span></span>
+      <span style="font:500 11px var(--mono);color:var(--mute);text-transform:uppercase;letter-spacing:.06em">Layer opacity: <span id="gis-op-val" style="color:var(--text)">${Math.round(GIS.opacity*100)}%</span></span>
       <div class="seg" style="height:24px"><button class="${GIS.smooth?'on':''}" style="font-size:10.5px;padding:2px 8px" onclick="gisToggleSmooth(true)">Smooth</button><button class="${!GIS.smooth?'on':''}" style="font-size:10.5px;padding:2px 8px" onclick="gisToggleSmooth(false)">Grid</button></div>
     </div>
     <input type="range" min="0.1" max="1" step="0.05" value="${GIS.opacity}" oninput="gisSetOpacity(parseFloat(this.value))" style="width:100%;accent-color:var(--acc);margin-bottom:8px">

@@ -74,12 +74,14 @@ Do not double-click `index.html`: browsers block `fetch` on `file://` pages, so 
   - **Match:** "Most similar places on Earth" (the top 5 cells of the real Earth grid, with country and province). The circle compares the site with the selected place (the best one by default); click another row or a named analog site chip to put it in the circle.
   - **Profile and Data:** compare the site with the best place on Earth (default), another top place, or a named analog site, using the dropdown at the top.
   - **Base plan:** the base planner (section 3).
-- **Find on Earth:** scores every 1-degree Earth cell against the site and paints the globe. Turn dimensions on or off and click a place to see why it scored as it did.
+- **Find on Earth:** scores every 1-degree Earth cell against the site and paints the globe. Switch single measurements on or off and click a place to see why it scored as it did. Each place gets a summary: where the analogy is strong (80% or more), where it breaks down (under 60%), what to use the place for and what not. "Copy this report as text" copies that summary with the values, rank, limits and sources.
 - **Pick any point:** focus the Moon or Mars and click anywhere. The panel shows the measured values of the 111 km patch around that point, and "Find similar places on Earth" runs Find on Earth on them.
 - **GIS:** top banner tool that displays continuous 1-degree planetary environmental rasters across Earth (8 layers), Moon (6 layers), and Mars (4 layers) with scientific colormaps, opacity slider, smooth interpolation toggle, dynamic range legends, and click-to-probe cell coordinates and readings.
 - **Base plan (top bar):** pick any Moon or Mars candidate site and its panel opens on the Base plan tab (section 3).
 - **Method (top bar):** how the match is calculated, the backtest (where each curated analog ranks among all Earth cells) and every data source.
 - **Question presets (Find on Earth):** Rover mobility, Landing hazard, Thermal cycling or Everything measured switch the features to the ones that matter for that question, and the panel says whether Earth has a close analog for it.
+- **Named analog sites:** the same strong / breaks down summary, plus the best pair of named Earth sites for the target. There are no weight sliders any more: the question presets in Find on Earth do that job, and the weights are fixed in `sites.json`.
+- **About (top bar):** purpose, who it is for, how to start, limits, and links to the guides in `docs/` (`FEATURE_GUIDE.md`, `PLAIN_GUIDE.md`, `LIMITATIONS.md`, `SOURCES_AND_METHODS.md`).
 - There is no "Load data" button any more: the named sites always come from `docs/data/sites.json` (rerun `build_named_sites.py`).
 
 How the score works: per feature, `1 - min(1, |difference| / scale)`; each dimension (terrain, landform, thermal) counts equally and its features share that weight; a cell is scored only if it has a value in every dimension that is switched on (so a coastal cell cannot reach 100% on temperature alone). The `scale` of each feature is set in `build_grid.py` (`FEATURES`) and is a starting guess that needs a written justification.
