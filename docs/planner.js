@@ -61,7 +61,7 @@ const store = { get(k) { try { return JSON.parse(localStorage.getItem(k)); } cat
 const BP = { cfg: null, terr: {}, tid: null, site: null, T: null, c: null, roadCache: null,
   st: { prio: 'safety', preset: '', crew: '', days: '', pw: '', nuc: false, layer: 'relief', view: 'fit', a: {}, fv: {}, hab: {} } };
 window.BP = BP;
-const saveSt = () => store.set('bp-inputs', { preset: BP.st.preset, crew: BP.st.crew, days: BP.st.days, pw: BP.st.pw, nuc: BP.st.nuc, prio: BP.st.prio, a: BP.st.a, fv: BP.st.fv });
+const saveSt = () => store.set('bp-inputs-v2', { preset: BP.st.preset, crew: BP.st.crew, days: BP.st.days, pw: BP.st.pw, nuc: BP.st.nuc, prio: BP.st.prio, a: BP.st.a, fv: BP.st.fv });
 
 /* ---------- loading ---------- */
 async function loadCfg() {
@@ -69,7 +69,7 @@ async function loadCfg() {
   const r = await fetch('data/siting.json', { cache: 'no-cache' });
   if (!r.ok) throw new Error('data/siting.json returned HTTP ' + r.status);
   BP.cfg = await r.json();
-  const saved = store.get('bp-inputs') || {};
+  const saved = store.get('bp-inputs-v2') || {};  // v2: older presets filled design parameters their cited documents do not give, so inputs saved before that are dropped
   for (const [k, o] of Object.entries(BP.cfg.assumptions)) BP.st.a[k] = ok(o.v) ? o.v : null;  // file values (with source) first
   Object.assign(BP.st, { preset: saved.preset || '', crew: saved.crew ?? '', days: saved.days ?? '', pw: saved.pw ?? '', nuc: !!saved.nuc, prio: saved.prio || 'safety' });
   for (const [k, v] of Object.entries(saved.a || {})) if (k in BP.st.a && ok(v)) BP.st.a[k] = v;     // then this browser's typed values

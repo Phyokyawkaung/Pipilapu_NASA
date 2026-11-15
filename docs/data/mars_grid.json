@@ -29,6 +29,11 @@
    "key": "hypso",
    "unit": "",
    "source": "Measured by pipeline/build_body_grid.py from USGS Astrogeology Mars MGS MOLA DEM 463 m (https://astrogeology.usgs.gov/search/map/mars_mgs_mola_dem_463m): 111.2 km patch of 60 x 60 points 1853 m apart centred on each 1-degree point, sampled bilinearly. Accessed 2026-11-14."
+  },
+  {
+   "key": "albedo",
+   "unit": "",
+   "source": "Measured by pipeline/prep_albedo.py from MGS TES global bolometric albedo mosaic, 7410 m (USGS Astrogeology, https://astrogeology.usgs.gov/search/map/mars_mgs_tes_global_bolometric_albedo_map_7410m; Christensen et al. 2001): mean over the 111.2 km patch of 60 x 60 points around each 1-degree point (nearest pixel). Accessed 2026-11-15."
   }
  ]
 }

@@ -103,6 +103,17 @@
    "url": "https://doi.org/10.5067/MODIS/MOD11C3.061",
    "resolution": "0.05 degree (about 5.6 km)",
    "date": ""
+  },
+  {
+   "key": "albedo",
+   "label": "Surface albedo (share of sunlight reflected)",
+   "unit": "",
+   "dimension": "albedo",
+   "scale": 0.3,
+   "source": "NASA MODIS MCD43C3 v6.1 BRDF/Albedo, white-sky shortwave albedo (0.3-5.0 um), 0.05 degree CMG, one 16-day retrieval per month of 2025 averaged (LP DAAC; pipeline/prep_albedo.py); files A2025015, A2025046, A2025074, A2025105, A2025135, A2025166, A2025196, A2025227, A2025258, A2025288, A2025319, A2025349",
+   "url": "https://doi.org/10.5067/MODIS/MCD43C3.061",
+   "resolution": "0.05 degree (about 5.6 km)",
+   "date": "2026-11-15"
   }
  ]
 }

@@ -115,121 +115,26 @@
    "body": "moon",
    "crew": 4,
    "days": 30,
-   "pw": 50.0,
-   "nuc": false,
+   "pw": 10.0,
+   "nuc": true,
    "prio": "safety",
-   "src": "NASA Artemis Plan (2020) & NASA-STD-3001",
-   "url": "https://www.nasa.gov/specials/artemis/",
-   "desc": "NASA 4-astronaut lunar south pole outpost with 30-day surface stay and 50 kW continuous power baseline.",
-   "a": {
-    "vol_per_crew": 25.0,
-    "cell_eff": 0.30,
-    "losses": 0.15,
-    "dod": 0.80,
-    "rt_eff": 0.85,
-    "wh_per_kg": 180.0,
-    "pad_dist": 1000.0,
-    "slope_limit": 10.0,
-    "margin": 1.25
-   },
-   "site_facts": {
-    "shackleton": {
-     "night_hours": 54.0
-    }
-   }
+   "src": "NASA, \"Lunar Living: NASA's Artemis Base Camp Concept\", 28 Oct 2020",
+   "url": "https://www.nasa.gov/blogs/missions/2020/10/28/lunar-living-nasas-artemis-base-camp-concept/",
+   "desc": "Quoted on the page: a fixed habitat that \"can house up to four astronauts for a month-long stay\", and a fission surface power unit that \"can continuously provide 10 kW of power\". The 10 kW is what the concept supplies, used here as the power need. Design parameters are not given there: type your own."
   },
   "mars_dra5": {
    "name": "NASA Mars DRA 5.0",
    "body": "mars",
    "crew": 6,
-   "days": 500,
+   "days": 539,
    "pw": 40.0,
    "nuc": true,
    "prio": "science",
-   "src": "NASA-SP-2009-566 (Human Exploration of Mars: DRA 5.0)",
-   "url": "https://www.nasa.gov/general/human-exploration-of-mars-design-reference-architecture-5-0/",
-   "desc": "NASA long-stay Mars surface mission: 6 crew, 500-day stay, 40 kWe fission surface power, and 1 km reactor separation.",
+   "src": "Drake (ed.), Human Exploration of Mars Design Reference Architecture 5.0, NASA NTRS 20100028285",
+   "url": "https://ntrs.nasa.gov/api/citations/20100028285/downloads/20100028285.pdf",
+   "desc": "Quoted in the document: \"six crewmembers\", \"Mars stay time would be 539 days\", fission power \"on the order of 40 kWe continuously\", and \"Power system emplaced 1 km from landing location\" (used as the reactor distance). Other design parameters are not given there: type your own.",
    "a": {
-    "vol_per_crew": 50.0,
-    "reactor_dist": 1000.0,
-    "long_night_h": 12.0,
-    "buffer_h": 72.0,
-    "pad_dist": 2000.0,
-    "slope_limit": 12.0,
-    "margin": 1.30,
-    "cell_eff": 0.30,
-    "losses": 0.20,
-    "dod": 0.80,
-    "rt_eff": 0.85,
-    "wh_per_kg": 180.0
-   },
-   "site_facts": {
-    "jezero": {
-     "transmission": 0.70
-    },
-    "olympus": {
-     "transmission": 0.75
-    },
-    "valles": {
-     "transmission": 0.70
-    }
-   }
-  },
-  "mars_austere": {
-   "name": "NASA Mars Austere Sortie",
-   "body": "mars",
-   "crew": 4,
-   "days": 30,
-   "pw": 25.0,
-   "nuc": false,
-   "prio": "science",
-   "src": "NASA-SP-2009-566-ADD (Austere Human Missions to Mars)",
-   "url": "https://ntrs.nasa.gov/citations/20090042784",
-   "desc": "NASA short-stay opposition Mars sortie: 4 crew, 30-day surface stay, solar-powered minimal surface footprint.",
-   "a": {
-    "vol_per_crew": 30.0,
-    "cell_eff": 0.30,
-    "losses": 0.20,
-    "dod": 0.80,
-    "rt_eff": 0.85,
-    "wh_per_kg": 180.0,
-    "pad_dist": 1500.0,
-    "slope_limit": 12.0,
-    "margin": 1.25
-   },
-   "site_facts": {
-    "jezero": {
-     "transmission": 0.70
-    },
-    "olympus": {
-     "transmission": 0.75
-    },
-    "valles": {
-     "transmission": 0.70
-    }
-   }
-  },
-  "apollo": {
-   "name": "Apollo Short Sortie",
-   "body": "moon",
-   "crew": 2,
-   "days": 3,
-   "pw": 2.5,
-   "nuc": false,
-   "prio": "science",
-   "src": "Apollo Lunar Surface Journal & NASA Apollo Mission Reports",
-   "url": "https://www.nasa.gov/history/alsj/",
-   "desc": "Apollo-style lunar surface sortie: 2 astronauts, 3-day exploration, minimal LM-scale electrical footprint.",
-   "a": {
-    "vol_per_crew": 5.0,
-    "cell_eff": 0.28,
-    "losses": 0.15,
-    "dod": 0.70,
-    "rt_eff": 0.80,
-    "wh_per_kg": 150.0,
-    "pad_dist": 150.0,
-    "slope_limit": 15.0,
-    "margin": 1.15
+    "reactor_dist": 1000.0
    }
   }
  },
@@ -424,5 +329,6 @@
     }
    }
   }
- }
+ },
+ "presets_note": "Each preset value must be quoted in the document named in src. Values the document does not give are left out, so the user types them."
 }

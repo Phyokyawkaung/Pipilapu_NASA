@@ -77,13 +77,17 @@ Do not double-click `index.html`: browsers block `fetch` on `file://` pages, so 
 - **Find on Earth:** scores every 1-degree Earth cell against the site and paints the globe. Turn dimensions on or off and click a place to see why it scored as it did.
 - **Pick any point:** focus the Moon or Mars and click anywhere. The panel shows the measured values of the 111 km patch around that point, and "Find similar places on Earth" runs Find on Earth on them.
 - **GIS:** top banner tool that displays continuous 1-degree planetary environmental rasters across Earth (8 layers), Moon (6 layers), and Mars (4 layers) with scientific colormaps, opacity slider, smooth interpolation toggle, dynamic range legends, and click-to-probe cell coordinates and readings.
-- **Load data:** drop a dataset JSON (schema `earth-analogs/v1`) to replace the embedded named-site data.
+- **Base plan (top bar):** pick any Moon or Mars candidate site and its panel opens on the Base plan tab (section 3).
+- **Method (top bar):** how the match is calculated, the backtest (where each curated analog ranks among all Earth cells) and every data source.
+- **Question presets (Find on Earth):** Rover mobility, Landing hazard, Thermal cycling or Everything measured switch the features to the ones that matter for that question, and the panel says whether Earth has a close analog for it.
+- There is no "Load data" button any more: the named sites always come from `docs/data/sites.json` (rerun `build_named_sites.py`).
 
 How the score works: per feature, `1 - min(1, |difference| / scale)`; each dimension (terrain, landform, thermal) counts equally and its features share that weight; a cell is scored only if it has a value in every dimension that is switched on (so a coastal cell cannot reach 100% on temperature alone). The `scale` of each feature is set in `build_grid.py` (`FEATURES`) and is a starting guess that needs a written justification.
 
 ## 3. Base plan tab
 Enter crew, days, power and design parameters. The planner places the habitat, solar field, batteries, landing pad, antenna, ice prospect, fission unit and science zone on real terrain with the rules in `RULES` (`docs/planner.js`), draws roads along the gentlest slopes, and sizes power, batteries and habitat volume.
 
+- **Mission presets** fill only numbers quoted in the document they cite: Artemis Base Camp (NASA blog, 28 Oct 2020: 4 crew, a month, 10 kW fission) and NASA Mars DRA 5.0 (NTRS 20100028285: 6 crew, 539 days, about 40 kWe fission, power system 1 km from the landing site). Every other design parameter stays empty for you to type. Add a preset to `siting.json` only with a value that its `src` document states.
 - **Inputs are yours, not data.** They are remembered in your browser. "Clear my inputs" resets them. Percentages are typed as 0 to 100.
 - **Missing inputs:** the "To complete the plan" list shows what is needed; click an item to jump to its box.
 - **Site facts** come from `docs/data/siting.json`. A fact with no source shows "No sourced value" and a box for your own number.
